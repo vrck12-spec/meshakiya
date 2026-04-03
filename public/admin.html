@@ -235,10 +235,88 @@
 
     .last-update { font-size: 0.8rem; color: #aaa; }
 
+    /* ===== Dashboard ===== */
+    .dashboard-section {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    .dashboard-section h2 {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 16px;
+      font-weight: 600;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+
+    .stat-card .num { font-size: 2.2rem; font-weight: bold; color: #1565c0; }
+    .stat-card .lbl { font-size: 0.8rem; color: #888; margin-top: 4px; }
+    .stat-card .sub { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
+    .stat-card.green .num { color: #2e7d32; }
+    .stat-card.orange .num { color: #e65100; }
+    .stat-card.red .num { color: #c62828; }
+
+    /* Capacity Map */
+    .capacity-map {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .cap-cell {
+      border-radius: 10px;
+      padding: 12px 14px;
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+    .cap-cell.empty   { background: #f1f8e9; border: 2px solid #c8e6c9; }
+    .cap-cell.low     { background: #e8f5e9; border: 2px solid #a5d6a7; }
+    .cap-cell.medium  { background: #fff3e0; border: 2px solid #ffcc80; }
+    .cap-cell.high    { background: #fce4ec; border: 2px solid #ef9a9a; }
+    .cap-cell.full    { background: #ffebee; border: 2px solid #ef5350; }
+
+    .cap-cell .cap-day  { font-size: 0.78rem; color: #666; margin-bottom: 2px; }
+    .cap-cell .cap-slot { font-size: 0.82rem; font-weight: bold; color: #333; margin-bottom: 6px; }
+    .cap-cell .cap-num  { font-size: 1.4rem; font-weight: bold; }
+    .cap-cell.empty   .cap-num { color: #81c784; }
+    .cap-cell.low     .cap-num { color: #43a047; }
+    .cap-cell.medium  .cap-num { color: #fb8c00; }
+    .cap-cell.high    .cap-num { color: #e53935; }
+    .cap-cell.full    .cap-num { color: #c62828; }
+    .cap-cell .cap-of  { font-size: 0.72rem; color: #999; }
+    .cap-cell .cap-bar { height: 4px; border-radius: 2px; margin-top: 6px; background: #e0e0e0; }
+    .cap-cell .cap-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .cap-cell.empty   .cap-bar-fill { background: #81c784; }
+    .cap-cell.low     .cap-bar-fill { background: #43a047; }
+    .cap-cell.medium  .cap-bar-fill { background: #fb8c00; }
+    .cap-cell.high    .cap-bar-fill { background: #e53935; }
+    .cap-cell.full    .cap-bar-fill { background: #c62828; }
+    .full-badge {
+      position: absolute; top: 8px; left: 8px;
+      background: #c62828; color: white;
+      font-size: 0.65rem; padding: 2px 6px;
+      border-radius: 20px; font-weight: bold;
+    }
+
+    /* Alerts */
+    .alerts-list { display: flex; flex-direction: column; gap: 8px; }
+    .alert-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 8px; font-size: 0.88rem;
+    }
+    .alert-item.full   { background: #ffebee; color: #c62828; }
+    .alert-item.almost { background: #fff3e0; color: #e65100; }
+    .alert-item.ok     { background: #f1f8e9; color: #2e7d32; font-size: 0.85rem; }
+
     @media (max-width: 600px) {
       #mainScreen { padding: 12px; }
       .reg-table { font-size: 0.8rem; }
       .reg-table th, .reg-table td { padding: 7px 8px; }
+      .capacity-map { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -271,7 +349,22 @@
     <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
   </div>
 
+  <!-- Stats Cards -->
   <div class="stats-grid" id="statsGrid"></div>
+
+  <!-- Capacity Map -->
+  <div class="dashboard-section">
+    <h2>🗺️ מפת קיבולת — כל הסשנים במבט אחד</h2>
+    <div class="capacity-map" id="capacityMap"></div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="dashboard-section" id="alertsSection">
+    <h2>🔔 התראות</h2>
+    <div class="alerts-list" id="alertsList"></div>
+  </div>
+
+  <!-- Detailed Tables -->
   <div id="daysContainer"></div>
 </div>
 
@@ -328,38 +421,81 @@
 
   function slotLabel(slotId) {
     const labels = {
-      morning1:   '☀️ בוקר א׳ 09:00–10:30',
-      morning2:   '☀️ בוקר ב׳ 10:30–12:00',
+      morning1:   '☀️ בוקר א׳ 09:00–11:00',
+      morning2:   '☀️ בוקר ב׳ 11:00–13:00',
       afternoon1: '🌤️ אחה"צ א׳ 15:00–16:30',
       afternoon2: '🌤️ אחה"צ ב׳ 16:30–18:00',
     };
     return labels[slotId] || slotId;
   }
 
+  function slotShort(slotId) {
+    const labels = { morning1:'בוקר א׳', morning2:'בוקר ב׳', afternoon1:'אחה"צ א׳', afternoon2:'אחה"צ ב׳' };
+    return labels[slotId] || slotId;
+  }
+
+  function capClass(pct) {
+    if (pct === 0)   return 'empty';
+    if (pct < 50)    return 'low';
+    if (pct < 85)    return 'medium';
+    if (pct < 100)   return 'high';
+    return 'full';
+  }
+
   function render() {
     const dates = Object.keys(allData).sort();
-    let totalChildren = 0;
-    let totalFamilies = 0;
-    let totalSlots = 0;
+    let totalPeople = 0, totalChildren = 0, totalFamilies = 0;
+    let totalCapacity = 0, fullSlots = 0, almostSlots = 0;
+    const allSlots = []; // for capacity map
 
-    // count stats
     dates.forEach(date => {
-      Object.values(allData[date] || {}).forEach(regs => {
+      Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
+        const people = countPeople(regs);
+        totalPeople   += people;
         totalFamilies += regs.length;
-        regs.forEach(r => { totalChildren += (r.children || []).length; });
-        if (regs.length > 0) totalSlots++;
+        regs.forEach(r => { totalChildren += (r.children||[]).length; });
+        totalCapacity += 30;
+        const pct = Math.round((people/30)*100);
+        if (pct >= 100) fullSlots++;
+        else if (pct >= 80) almostSlots++;
+        allSlots.push({ date, slotId, people, pct });
       });
     });
 
-    // Stats
+    const remaining = totalCapacity - totalPeople;
+
+    // ===== Stats Cards =====
     document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="num">${totalChildren}</div><div class="lbl">ילדים נרשמו</div></div>
+      <div class="stat-card"><div class="num">${totalPeople}</div><div class="lbl">אנשים נרשמו</div><div class="sub">(כולל הורים)</div></div>
+      <div class="stat-card green"><div class="num">${remaining}</div><div class="lbl">מקומות פנויים</div><div class="sub">מתוך ${totalCapacity}</div></div>
       <div class="stat-card"><div class="num">${totalFamilies}</div><div class="lbl">משפחות</div></div>
-      <div class="stat-card"><div class="num">${totalSlots}</div><div class="lbl">חלוני זמן פעילים</div></div>
-      <div class="stat-card"><div class="num">${dates.length}</div><div class="lbl">ימים</div></div>
+      <div class="stat-card"><div class="num">${totalChildren}</div><div class="lbl">ילדים</div></div>
+      <div class="stat-card red"><div class="num">${fullSlots}</div><div class="lbl">סשנים מלאים</div></div>
+      <div class="stat-card orange"><div class="num">${almostSlots}</div><div class="lbl">סשנים כמעט מלאים</div></div>
     `;
 
-    // Days
+    // ===== Capacity Map =====
+    document.getElementById('capacityMap').innerHTML = allSlots.length
+      ? allSlots.map(s => `
+          <div class="cap-cell ${capClass(s.pct)}">
+            ${s.pct >= 100 ? '<span class="full-badge">מלא</span>' : ''}
+            <div class="cap-day">${hebrewDay(s.date)} ${formatDate(s.date)}</div>
+            <div class="cap-slot">${slotShort(s.slotId)}</div>
+            <div class="cap-num">${s.people}<span class="cap-of">/30</span></div>
+            <div class="cap-bar"><div class="cap-bar-fill" style="width:${Math.min(s.pct,100)}%"></div></div>
+          </div>`).join('')
+      : '<div style="color:#aaa;font-size:0.9rem">אין סשנים עם רישומים עדיין</div>';
+
+    // ===== Alerts =====
+    const alerts = [];
+    allSlots.forEach(s => {
+      if (s.pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(s.date)} — ${slotShort(s.slotId)}</strong>: הגיע ל-30 אנשים — הרישום נסגר</div>`);
+      else if (s.pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(s.date)} — ${slotShort(s.slotId)}</strong>: ${s.people}/30 אנשים — נותרו ${30-s.people} מקומות בלבד</div>`);
+    });
+    if (!alerts.length) alerts.push('<div class="alert-item ok">✅ אין התראות — כל הסשנים תקינים</div>');
+    document.getElementById('alertsList').innerHTML = alerts.join('');
+
+    // ===== Days =====
     if (!dates.length) {
       document.getElementById('daysContainer').innerHTML =
         '<div style="text-align:center;color:#aaa;padding:40px;font-size:1rem">אין רישומים עדיין</div>';
