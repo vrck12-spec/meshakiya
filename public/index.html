@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>רישום למשחקיה העירונית — חול המועד</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f7fa 0%, #fce4ec 100%);
+      min-height: 100vh;
+      padding: 20px;
+      direction: rtl;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: linear-gradient(135deg, #1565c0, #283593);
+      color: white;
+      border-radius: 20px;
+      padding: 24px 24px 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 24px rgba(21,101,192,0.3);
+    }
+
+    .header .logo-wrap {
+      background: white;
+      border-radius: 14px;
+      display: inline-block;
+      padding: 8px 16px;
+      margin-bottom: 14px;
+    }
+
+    .header .logo-wrap img {
+      height: 70px;
+      display: block;
+    }
+
+    .header .emoji { font-size: 2.2rem; display: block; margin-bottom: 6px; }
+    .header h1 { font-size: 1.7rem; margin-bottom: 4px; }
+    .header .subtitle { font-size: 1rem; opacity: 0.85; }
+
+    /* ===== Info Box ===== */
+    .info-box {
+      background: white;
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+      border-right: 5px solid #1565c0;
+    }
+
+    .info-box h2 {
+      font-size: 1.05rem;
+      color: #1565c0;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .hours-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .hour-card {
+      background: #e3f2fd;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      color: #1565c0;
+    }
+
+    .hour-card strong { display: block; font-size: 0.8rem; color: #555; margin-bottom: 3px; }
+
+    .rules-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rules-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #333;
+      padding: 8px 12px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .rules-list li .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* ===== Card ===== */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #333;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* ===== Date Grid ===== */
+    .dates-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .date-item {
+      border: 2px solid #e0e0e0;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .date-item:hover:not(.all-full) { border-color: #1565c0; }
+    .date-item.selected { border-color: #1565c0; box-shadow: 0 0 0 3px rgba(21,101,192,0.15); }
+    .date-item.all-full { opacity: 0.65; cursor: default; }
+
+    .date-header {
+      background: #f5f5f5;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    .date-item.selected .date-header { background: #e3f2fd; color: #1565c0; }
+
+    .slots-row {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+
+    .slot-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+      color: #333;
+    }
+
+    .slot-btn:hover:not(.full) { border-color: #1565c0; background: #e3f2fd; }
+    .slot-btn.selected { border-color: #1565c0; background: #1565c0; color: white; }
+    .slot-btn.full { background: #fce4ec; color: #c62828; border-color: #ef9a9a; cursor: not-allowed; }
+
+    .slot-btn .time { font-weight: bold; font-size: 0.9rem; }
+    .slot-btn .spots {
+      font-size: 0.75rem;
+      margin-top: 3px;
+      opacity: 0.8;
+    }
+
+    .slot-btn.selected .spots { opacity: 0.9; }
+
+    /* ===== Form ===== */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+      font-size: 0.92rem;
+    }
+
+    input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      direction: rtl;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1565c0;
+    }
+
+    /* ===== Children ===== */
+    .children-section { margin-top: 4px; }
+
+    .child-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .child-row input[type="text"] { flex: 2; }
+    .child-row input[type="number"] {
+      flex: 1;
+      padding: 11px 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    .child-row input[type="number"]:focus { outline: none; border-color: #1565c0; }
+
+    .child-row .remove-btn {
+      background: none;
+      border: 2px solid #ef9a9a;
+      border-radius: 8px;
+      color: #c62828;
+      cursor: pointer;
+      padding: 6px 10px;
+      font-size: 1rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .child-row .remove-btn:hover { background: #fce4ec; }
+
+    .add-child-btn {
+      background: none;
+      border: 2px dashed #1565c0;
+      border-radius: 10px;
+      color: #1565c0;
+      cursor: pointer;
+      padding: 9px;
+      width: 100%;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .add-child-btn:hover { background: #e3f2fd; }
+
+    .child-labels {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .child-labels span { font-size: 0.8rem; color: #666; font-weight: 600; }
+    .child-labels span:first-child { flex: 2; }
+    .child-labels span:nth-child(2) { flex: 1; text-align: center; }
+    .child-labels span:last-child { width: 40px; }
+
+    /* ===== Submit ===== */
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #1565c0, #283593);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      margin-top: 6px;
+    }
+
+    .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(21,101,192,0.35); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* ===== Messages ===== */
+    .msg {
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      font-size: 0.92rem;
+      display: none;
+    }
+
+    .msg.show { display: block; }
+    .msg.error { background: #fce4ec; color: #b71c1c; border-right: 4px solid #c62828; }
+    .msg.success { background: #e8f5e9; color: #1b5e20; border-right: 4px solid #2e7d32; }
+    .msg.warning { background: #fff8e1; color: #e65100; border-right: 4px solid #f57c00; }
+
+    /* ===== Success Screen ===== */
+    #successScreen {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    #successScreen .big-emoji { font-size: 4rem; display: block; margin-bottom: 16px; }
+    #successScreen h2 { font-size: 1.5rem; color: #1b5e20; margin-bottom: 12px; }
+    #successScreen p { color: #555; margin-bottom: 8px; font-size: 0.95rem; }
+    #successScreen .detail { font-weight: bold; color: #1565c0; }
+
+    .back-btn {
+      margin-top: 24px;
+      padding: 12px 30px;
+      background: #1565c0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== Loading ===== */
+    .loading { text-align: center; padding: 30px; color: #666; font-size: 1rem; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .hours-grid { grid-template-columns: 1fr; }
+      .slots-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <img src="logo.png" alt="קריית שמונה" onerror="this.parentElement.style.display='none'" />
+    </div>
+    <span class="emoji">🎠</span>
+    <h1>משחקיה עירונית 8</h1>
+    <div class="subtitle">רישום לחול המועד פסח</div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-box">
+    <h2>🕐 שעות פעילות — חול המועד</h2>
+    <div class="hours-grid">
+      <div class="hour-card">
+        <strong>ימים א׳–ד׳ — בוקר</strong>
+        09:00–12:00
+      </div>
+      <div class="hour-card">
+        <strong>ימים א׳–ג׳ — אחה"צ</strong>
+        15:00–18:00
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:#888;margin-bottom:12px">* ביום רביעי אין פעילות בשעות אחה"צ</p>
+
+    <h2>📋 נהלים חשובים</h2>
+    <ul class="rules-list">
+      <li><span class="icon">🚫</span> אסור להכניס שתייה ואוכל למתחם</li>
+      <li><span class="icon">👟</span> חובה על כולם (כולל הורים) להוריד נעליים בכניסה</li>
+      <li><span class="icon">👨‍👧</span> הכניסה בליווי מבוגר בלבד</li>
+      <li><span class="icon">🧒</span> המתחם מתאים לילדים מגיל לידה עד גיל 14</li>
+      <li><span class="icon">📝</span> הכניסה ברישום מראש בקפסולות של עד 30 ילדים</li>
+    </ul>
+  </div>
+
+  <!-- Registration Form -->
+  <div id="formScreen">
+
+    <!-- Step 1: Date & Slot -->
+    <div class="card" id="step1Card">
+      <h2>📅 בחר תאריך וחלון זמן</h2>
+      <div id="datesContainer" class="dates-grid">
+        <div class="loading">טוען תאריכים...</div>
+      </div>
+    </div>
+
+    <!-- Step 2: Details -->
+    <div class="card" id="step2Card" style="display:none">
+      <h2>👨‍👩‍👧 פרטי רישום</h2>
+
+      <div id="formMsg" class="msg"></div>
+
+      <div class="form-group">
+        <label>שם ההורה / אחראי</label>
+        <input type="text" id="parentName" placeholder="שם מלא" />
+      </div>
+
+      <div class="form-group">
+        <label>מספר טלפון</label>
+        <input type="tel" id="phone" placeholder="05X-XXXXXXX" dir="ltr" />
+      </div>
+
+      <div class="form-group">
+        <label>ילדים המגיעים</label>
+        <div class="child-labels">
+          <span>שם הילד/ה</span>
+          <span>גיל</span>
+          <span></span>
+        </div>
+        <div id="childrenList" class="children-section"></div>
+        <button class="add-child-btn" onclick="addChild()">+ הוסף ילד/ה</button>
+      </div>
+
+      <button class="submit-btn" onclick="submitForm()">✅ שלח רישום</button>
+    </div>
+
+  </div>
+
+  <!-- Success Screen -->
+  <div class="card" id="successScreen">
+    <span class="big-emoji">🎉</span>
+    <h2>הרישום בוצע בהצלחה!</h2>
+    <p id="successDate" class="detail"></p>
+    <p id="successSlot" class="detail"></p>
+    <p id="successChildren"></p>
+    <p id="successSpots" style="color:#888;font-size:0.85rem;margin-top:10px"></p>
+    <p style="margin-top:16px;color:#555;font-size:0.88rem">נזכיר: יש להגיע עם נעליים שניתן להוריד בכניסה 👟</p>
+    <button class="back-btn" onclick="resetForm()">רישום נוסף</button>
+  </div>
+
+</div>
+
+<script>
+  let selectedDate = null;
+  let selectedSlot = null;
+  let allDatesData = [];
+  let childCount = 0;
+
+  // ===== Load Dates =====
+  async function loadDates() {
+    try {
+      const res = await fetch('/api/dates');
+      allDatesData = await res.json();
+      renderDates();
+    } catch (e) {
+      document.getElementById('datesContainer').innerHTML =
+        '<div style="color:#c62828;text-align:center">שגיאה בטעינת התאריכים. נסה לרענן.</div>';
+    }
+  }
+
+  function renderDates() {
+    const container = document.getElementById('datesContainer');
+
+    if (!allDatesData.length) {
+      container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">אין תאריכים פעילים כרגע</div>';
+      return;
+    }
+
+    container.innerHTML = allDatesData.map(day => {
+      const allFull = day.slots.every(s => s.full);
+      return `
+        <div class="date-item ${allFull ? 'all-full' : ''}" id="date-${day.date}" onclick="selectDate('${day.date}')">
+          <div class="date-header">
+            <span>${day.dayName} — ${formatDate(day.date)}</span>
+            ${allFull ? '<span style="font-size:0.8rem;color:#c62828">מלא</span>' : ''}
+          </div>
+          <div class="slots-row">
+            ${day.slots.map(slot => `
+              <button
+                class="slot-btn ${slot.full ? 'full' : ''}"
+                id="slot-${day.date}-${slot.id}"
+                onclick="selectSlot(event, '${day.date}', '${slot.id}')"
+                ${slot.full ? 'disabled' : ''}
+              >
+                <div class="time">${slot.display} ${slot.label}</div>
+                <div class="spots">${slot.full ? 'נסגר — מלא' : `${slot.available} מקומות פנויים`}</div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
+  }
+
+  function selectDate(date) {
+    document.querySelectorAll('.date-item').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById('date-' + date);
+    if (el && !el.classList.contains('all-full')) {
+      el.classList.add('selected');
+      selectedDate = date;
+    }
+  }
+
+  function selectSlot(event, date, slotId) {
+    event.stopPropagation();
+
+    // Deselect all slots
+    document.querySelectorAll('.slot-btn.selected').forEach(b => b.classList.remove('selected'));
+
+    const btn = document.getElementById(`slot-${date}-${slotId}`);
+    btn.classList.add('selected');
+
+    selectDate(date);
+    selectedDate = date;
+    selectedSlot = slotId;
+
+    // Show form
+    const step2 = document.getElementById('step2Card');
+    step2.style.display = 'block';
+    step2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Init children if empty
+    if (childCount === 0) addChild();
+  }
+
+  // ===== Children =====
+  function addChild() {
+    childCount++;
+    const div = document.createElement('div');
+    div.className = 'child-row';
+    div.id = 'child-' + childCount;
+    div.innerHTML = `
+      <input type="text" placeholder="שם הילד/ה" class="child-name" />
+      <input type="number" min="0" max="14" placeholder="גיל" class="child-age" />
+      <button class="remove-btn" onclick="removeChild(${childCount})">✕</button>
+    `;
+    document.getElementById('childrenList').appendChild(div);
+  }
+
+  function removeChild(id) {
+    const el = document.getElementById('child-' + id);
+    if (el) el.remove();
+  }
+
+  function getChildren() {
+    const rows = document.querySelectorAll('.child-row');
+    const children = [];
+    rows.forEach(row => {
+      const name = row.querySelector('.child-name').value.trim();
+      const age  = row.querySelector('.child-age').value;
+      if (name) children.push({ name, age: age !== '' ? parseInt(age) : null });
+    });
+    return children;
+  }
+
+  // ===== Submit =====
+  function showMsg(type, text) {
+    const el = document.getElementById('formMsg');
+    el.className = 'msg show ' + type;
+    el.textContent = text;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearMsg() {
+    const el = document.getElementById('formMsg');
+    el.className = 'msg';
+    el.textContent = '';
+  }
+
+  async function submitForm() {
+    clearMsg();
+
+    const parentName = document.getElementById('parentName').value.trim();
+    const phone      = document.getElementById('phone').value.trim();
+    const children   = getChildren();
+
+    if (!selectedDate || !selectedSlot) {
+      showMsg('error', 'נא לבחור תאריך וחלון זמן');
+      return;
+    }
+    if (!parentName) { showMsg('error', 'נא להזין שם הורה / אחראי'); return; }
+    if (!phone)      { showMsg('error', 'נא להזין מספר טלפון'); return; }
+    if (!children.length) { showMsg('error', 'נא להוסיף לפחות ילד/ה אחד/ת'); return; }
+
+    const btn = document.querySelector('.submit-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ שולח...';
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: selectedDate, slot: selectedSlot, parentName, phone, children })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showSuccess(data, children);
+      } else if (res.status === 409) {
+        showMsg('warning', data.error);
+        loadDates(); // Refresh slots
+      } else {
+        showMsg('error', data.error || 'שגיאה בשליחה, נסה שוב');
+      }
+    } catch (e) {
+      showMsg('error', 'שגיאת תקשורת. בדוק חיבור לאינטרנט ונסה שוב.');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '✅ שלח רישום';
+  }
+
+  function showSuccess(data, children) {
+    document.getElementById('formScreen').style.display = 'none';
+    const s = document.getElementById('successScreen');
+    s.style.display = 'block';
+
+    document.getElementById('successDate').textContent = `📅 ${data.dayName} — ${formatDate(data.date)}`;
+    document.getElementById('successSlot').textContent = `🕐 ${data.slotLabel}`;
+    document.getElementById('successChildren').textContent =
+      `👧 ילדים שנרשמו: ${children.map(c => c.name).join(', ')}`;
+    document.getElementById('successSpots').textContent =
+      data.remainingSpots > 0
+        ? `נותרו עוד ${data.remainingSpots} מקומות פנויים בחלון זמן זה`
+        : 'החלון מלא — אין יותר מקומות';
+
+    s.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('formScreen').style.display = 'block';
+    document.getElementById('successScreen').style.display = 'none';
+    document.getElementById('step2Card').style.display = 'none';
+    document.getElementById('parentName').value = '';
+    document.getElementById('phone').value = '';
+    document.getElementById('childrenList').innerHTML = '';
+    childCount = 0;
+    selectedDate = null;
+    selectedSlot = null;
+    clearMsg();
+    loadDates();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Init
+  loadDates();
+</script>
+</body>
+</html>

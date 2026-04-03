@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ניהול רישומים — משחקיה 8</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    /* ===== Top Bar ===== */
+    .topbar {
+      background: linear-gradient(135deg, #1565c0, #283593);
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    }
+
+    .topbar h1 { font-size: 1.2rem; }
+    .topbar .sub { font-size: 0.82rem; opacity: 0.8; margin-top: 2px; }
+
+    .export-btn {
+      background: white;
+      color: #1565c0;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .export-btn:hover { background: #e3f2fd; }
+
+    /* ===== Login ===== */
+    #loginScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 60px);
+      padding: 20px;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .login-card h2 { font-size: 1.2rem; color: #333; margin-bottom: 6px; }
+    .login-card p  { font-size: 0.85rem; color: #888; margin-bottom: 24px; }
+
+    .login-card input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 4px;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+
+    .login-card input:focus { outline: none; border-color: #1565c0; }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #1565c0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .login-err { color: #c62828; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+    /* ===== Main ===== */
+    #mainScreen { display: none; padding: 24px; max-width: 960px; margin: 0 auto; }
+
+    /* ===== Stats ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px 16px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+
+    .stat-card .num { font-size: 2rem; font-weight: bold; color: #1565c0; }
+    .stat-card .lbl { font-size: 0.8rem; color: #888; margin-top: 4px; }
+
+    /* ===== Day Blocks ===== */
+    .day-block {
+      background: white;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .day-header {
+      background: linear-gradient(135deg, #1565c0, #283593);
+      color: white;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-header .day-total { font-size: 0.85rem; opacity: 0.85; }
+
+    .slot-section { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+    .slot-section:last-child { border-bottom: none; }
+
+    .slot-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .slot-title h3 { font-size: 0.95rem; color: #333; }
+
+    .capacity-bar-wrap { display: flex; align-items: center; gap: 10px; }
+    .capacity-bar {
+      flex: 1;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      max-width: 200px;
+    }
+    .capacity-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s;
+    }
+    .capacity-fill.low    { background: #43a047; }
+    .capacity-fill.medium { background: #fb8c00; }
+    .capacity-fill.high   { background: #e53935; }
+
+    .capacity-text { font-size: 0.82rem; color: #666; white-space: nowrap; }
+
+    /* ===== Table ===== */
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .reg-table th {
+      background: #f5f7fa;
+      padding: 9px 12px;
+      text-align: right;
+      color: #555;
+      font-weight: 600;
+      border-bottom: 2px solid #e8e8e8;
+    }
+
+    .reg-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+      vertical-align: top;
+    }
+
+    .reg-table tr:last-child td { border-bottom: none; }
+    .reg-table tr:hover td { background: #fafbff; }
+
+    .tag {
+      display: inline-block;
+      background: #e3f2fd;
+      color: #1565c0;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 0.78rem;
+      margin: 2px 2px 2px 0;
+    }
+
+    .empty-slot {
+      text-align: center;
+      color: #bbb;
+      padding: 16px;
+      font-size: 0.88rem;
+    }
+
+    /* ===== Refresh ===== */
+    .refresh-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: 2px solid #1565c0;
+      color: #1565c0;
+      border-radius: 8px;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { background: #e3f2fd; }
+
+    .last-update { font-size: 0.8rem; color: #aaa; }
+
+    @media (max-width: 600px) {
+      #mainScreen { padding: 12px; }
+      .reg-table { font-size: 0.8rem; }
+      .reg-table th, .reg-table td { padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="h1" style="font-size:1.1rem;font-weight:bold">🎠 ניהול רישומים — משחקיה 8</div>
+    <div class="sub">פאנל מנהל</div>
+  </div>
+  <button class="export-btn" onclick="exportCSV()">📥 ייצוא לאקסל (CSV)</button>
+</div>
+
+<!-- Login -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
+    <h2>כניסת מנהל</h2>
+    <p>הזן קוד גישה</p>
+    <input type="password" id="passInput" placeholder="••••••" onkeydown="if(event.key==='Enter')login()" />
+    <button class="login-btn" onclick="login()">כניסה</button>
+    <div class="login-err" id="loginErr">קוד שגוי, נסה שוב</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div id="mainScreen">
+  <div class="refresh-row">
+    <span class="last-update" id="lastUpdate"></span>
+    <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
+  </div>
+
+  <div class="stats-grid" id="statsGrid"></div>
+  <div id="daysContainer"></div>
+</div>
+
+<script>
+  const ADMIN_PASS = '1234'; // ← שנה את הסיסמה כאן
+
+  let allData = {};
+
+  function login() {
+    const val = document.getElementById('passInput').value;
+    if (val === ADMIN_PASS) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen').style.display = 'block';
+      loadData();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch('/api/admin');
+      allData = await res.json();
+      render();
+      document.getElementById('lastUpdate').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      alert('שגיאה בטעינת נתונים');
+    }
+  }
+
+  function hebrewDay(dateStr) {
+    const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    const d = new Date(dateStr + 'T12:00:00');
+    return 'יום ' + days[d.getDay()];
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('he-IL', { day:'numeric', month:'long' });
+  }
+
+  function slotLabel(slotId) {
+    return slotId === 'morning' ? '☀️ בוקר 09:00–12:00' : '🌤️ אחה"צ 15:00–18:00';
+  }
+
+  function render() {
+    const dates = Object.keys(allData).sort();
+    let totalChildren = 0;
+    let totalFamilies = 0;
+    let totalSlots = 0;
+
+    // count stats
+    dates.forEach(date => {
+      Object.values(allData[date] || {}).forEach(regs => {
+        totalFamilies += regs.length;
+        regs.forEach(r => { totalChildren += (r.children || []).length; });
+        if (regs.length > 0) totalSlots++;
+      });
+    });
+
+    // Stats
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="num">${totalChildren}</div><div class="lbl">ילדים נרשמו</div></div>
+      <div class="stat-card"><div class="num">${totalFamilies}</div><div class="lbl">משפחות</div></div>
+      <div class="stat-card"><div class="num">${totalSlots}</div><div class="lbl">חלוני זמן פעילים</div></div>
+      <div class="stat-card"><div class="num">${dates.length}</div><div class="lbl">ימים</div></div>
+    `;
+
+    // Days
+    if (!dates.length) {
+      document.getElementById('daysContainer').innerHTML =
+        '<div style="text-align:center;color:#aaa;padding:40px;font-size:1rem">אין רישומים עדיין</div>';
+      return;
+    }
+
+    document.getElementById('daysContainer').innerHTML = dates.map(date => {
+      const dayData = allData[date] || {};
+      const slots = Object.keys(dayData);
+      let dayTotal = 0;
+      slots.forEach(s => { dayTotal += (dayData[s] || []).length; });
+
+      const slotsHtml = slots.map(slotId => {
+        const regs = dayData[slotId] || [];
+        const count = regs.length;
+        const pct = Math.round((count / 30) * 100);
+        const fillClass = pct < 50 ? 'low' : pct < 85 ? 'medium' : 'high';
+
+        const rows = regs.length
+          ? regs.map((r, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${r.parentName}</td>
+              <td dir="ltr">${r.phone}</td>
+              <td>${(r.children || []).map(c => `<span class="tag">${c.name}${c.age != null ? ' ('+c.age+')' : ''}</span>`).join('')}</td>
+              <td>${(r.children||[]).length}</td>
+              <td style="font-size:0.75rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
+            </tr>`).join('')
+          : `<tr><td colspan="6" class="empty-slot">אין רישומים לחלון זמן זה</td></tr>`;
+
+        return `
+          <div class="slot-section">
+            <div class="slot-title">
+              <h3>${slotLabel(slotId)}</h3>
+              <div class="capacity-bar-wrap">
+                <div class="capacity-bar">
+                  <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
+                </div>
+                <span class="capacity-text">${count}/30 ילדים</span>
+              </div>
+            </div>
+            <table class="reg-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>שם הורה</th>
+                  <th>טלפון</th>
+                  <th>ילדים</th>
+                  <th>כמות</th>
+                  <th>שעת רישום</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="day-block">
+          <div class="day-header">
+            <span>${hebrewDay(date)} — ${formatDate(date)}</span>
+            <span class="day-total">${dayTotal} ילדים בסה"כ</span>
+          </div>
+          ${slotsHtml || '<div class="empty-slot">אין נתונים</div>'}
+        </div>`;
+    }).join('');
+  }
+
+  function exportCSV() {
+    const rows = [['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום']];
+
+    Object.keys(allData).sort().forEach(date => {
+      Object.keys(allData[date]).forEach(slotId => {
+        (allData[date][slotId] || []).forEach(r => {
+          const names = (r.children||[]).map(c=>c.name).join(' | ');
+          const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
+          rows.push([
+            date,
+            hebrewDay(date),
+            slotId === 'morning' ? 'בוקר 09:00-12:00' : 'אחה"צ 15:00-18:00',
+            r.parentName,
+            r.phone,
+            names,
+            ages,
+            (r.children||[]).length,
+            new Date(r.registeredAt).toLocaleString('he-IL')
+          ]);
+        });
+      });
+    });
+
+    const bom = '\uFEFF';
+    const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'רישומים_משחקיה.csv';
+    a.click();
+  }
+
+  // Auto-refresh every 60s
+  setInterval(() => {
+    if (document.getElementById('mainScreen').style.display !== 'none') loadData();
+  }, 60000);
+</script>
+</body>
+</html>
