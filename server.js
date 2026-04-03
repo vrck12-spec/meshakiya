@@ -103,8 +103,8 @@ function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
   const slots = [
-    { id: 'morning1', label: '09:00–10:30', display: 'בוקר א׳' },
-    { id: 'morning2', label: '10:30–12:00', display: 'בוקר ב׳' },
+    { id: 'morning1', label: '09:00–11:00', display: 'בוקר א׳' },
+    { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
   ];
   if (day !== 3) {
     slots.push({ id: 'afternoon1', label: '15:00–16:30', display: 'אחה"צ א׳' });
