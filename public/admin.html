@@ -314,7 +314,13 @@
   }
 
   function slotLabel(slotId) {
-    return slotId === 'morning' ? '☀️ בוקר 09:00–12:00' : '🌤️ אחה"צ 15:00–18:00';
+    const labels = {
+      morning1:   '☀️ בוקר א׳ 09:00–10:30',
+      morning2:   '☀️ בוקר ב׳ 10:30–12:00',
+      afternoon1: '🌤️ אחה"צ א׳ 15:00–16:30',
+      afternoon2: '🌤️ אחה"צ ב׳ 16:30–18:00',
+    };
+    return labels[slotId] || slotId;
   }
 
   function render() {
@@ -379,7 +385,7 @@
                 <div class="capacity-bar">
                   <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
                 </div>
-                <span class="capacity-text">${count}/30 ילדים</span>
+                <span class="capacity-text">${count}/30 אנשים</span>
               </div>
             </div>
             <table class="reg-table">
@@ -420,7 +426,7 @@
           rows.push([
             date,
             hebrewDay(date),
-            slotId === 'morning' ? 'בוקר 09:00-12:00' : 'אחה"צ 15:00-18:00',
+            {'morning1':'בוקר א׳ 09:00-10:30','morning2':'בוקר ב׳ 10:30-12:00','afternoon1':'אחה"צ א׳ 15:00-16:30','afternoon2':'אחה"צ ב׳ 16:30-18:00'}[slotId] || slotId,
             r.parentName,
             r.phone,
             names,

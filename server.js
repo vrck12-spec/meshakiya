@@ -102,9 +102,19 @@ async function getAllData() {
 function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
-  const slots = [{ id: 'morning', label: '09:00–12:00', display: 'בוקר' }];
-  if (day !== 3) slots.push({ id: 'afternoon', label: '15:00–18:00', display: 'אחה"צ' });
+  const slots = [
+    { id: 'morning1', label: '09:00–10:30', display: 'בוקר א׳' },
+    { id: 'morning2', label: '10:30–12:00', display: 'בוקר ב׳' },
+  ];
+  if (day !== 3) {
+    slots.push({ id: 'afternoon1', label: '15:00–16:30', display: 'אחה"צ א׳' });
+    slots.push({ id: 'afternoon2', label: '16:30–18:00', display: 'אחה"צ ב׳' });
+  }
   return slots;
+}
+
+function countPeople(regs) {
+  return regs.reduce((sum, r) => sum + 1 + (r.children || []).length, 0);
 }
 
 function hebrewDay(dateStr) {
@@ -130,7 +140,8 @@ app.get('/api/dates', async (req, res) => {
 
       const slotsInfo = await Promise.all(slots.map(async slot => {
         const regs = await getSlotRegistrations(dateStr, slot.id);
-        return { ...slot, registered: regs.length, available: MAX_PER_SLOT - regs.length, full: regs.length >= MAX_PER_SLOT };
+        const people = countPeople(regs);
+        return { ...slot, registered: people, available: MAX_PER_SLOT - people, full: people >= MAX_PER_SLOT };
       }));
 
       result.push({ date: dateStr, dayName: hebrewDay(dateStr), slots: slotsInfo });
@@ -151,17 +162,19 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'חריץ זמן לא חוקי' });
 
     const regs = await getSlotRegistrations(date, slot);
-    if (regs.length >= MAX_PER_SLOT)
-      return res.status(409).json({ error: 'מצטערים, הרישום למועד זה נסגר — הגענו ל-30 ילדים', full: true });
+    const peopleCount = countPeople(regs);
+    if (peopleCount >= MAX_PER_SLOT)
+      return res.status(409).json({ error: 'מצטערים, הרישום למועד זה נסגר — הגענו ל-30 אנשים', full: true });
 
-    const remaining = MAX_PER_SLOT - regs.length;
-    if (children.length > remaining)
-      return res.status(409).json({ error: `נותרו רק ${remaining} מקומות`, remaining });
+    const remaining = MAX_PER_SLOT - peopleCount;
+    const newPeople = 1 + children.length; // הורה + ילדים
+    if (newPeople > remaining)
+      return res.status(409).json({ error: `נותרו רק ${remaining} מקומות (כולל הורים)`, remaining });
 
     const entry = { id: Date.now(), parentName, phone, children, registeredAt: new Date().toISOString() };
     await addRegistration(date, slot, entry);
 
-    const newCount = regs.length + 1;
+    const newTotal = peopleCount + newPeople;
     const slotInfo = getSlotsForDate(date).find(s => s.id === slot);
     res.json({
       success: true,
@@ -170,8 +183,8 @@ app.post('/api/register', async (req, res) => {
       date, dayName: hebrewDay(date),
       slotLabel: slotInfo?.label,
       childrenCount: children.length,
-      totalRegistered: newCount,
-      remainingSpots: MAX_PER_SLOT - newCount
+      totalRegistered: newTotal,
+      remainingSpots: MAX_PER_SLOT - newTotal
     });
   } catch (e) {
     console.error(e);
