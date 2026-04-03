@@ -280,6 +280,19 @@
 
   let allData = {};
 
+  function countPeople(regs) {
+    return regs.reduce((sum, r) => sum + 1 + (r.children || []).length, 0);
+  }
+
+  async function deleteReg(id) {
+    if (!confirm('למחוק רישום זה?')) return;
+    try {
+      const res = await fetch('/api/admin/registration/' + id, { method: 'DELETE' });
+      if (res.ok) { loadData(); }
+      else { alert('שגיאה במחיקה'); }
+    } catch (e) { alert('שגיאת תקשורת'); }
+  }
+
   function login() {
     const val = document.getElementById('passInput').value;
     if (val === ADMIN_PASS) {
@@ -357,11 +370,11 @@
       const dayData = allData[date] || {};
       const slots = Object.keys(dayData);
       let dayTotal = 0;
-      slots.forEach(s => { dayTotal += (dayData[s] || []).length; });
+      slots.forEach(s => { dayTotal += countPeople(dayData[s] || []); });
 
       const slotsHtml = slots.map(slotId => {
         const regs = dayData[slotId] || [];
-        const count = regs.length;
+        const count = countPeople(regs);
         const pct = Math.round((count / 30) * 100);
         const fillClass = pct < 50 ? 'low' : pct < 85 ? 'medium' : 'high';
 
@@ -372,10 +385,11 @@
               <td>${r.parentName}</td>
               <td dir="ltr">${r.phone}</td>
               <td>${(r.children || []).map(c => `<span class="tag">${c.name}${c.age != null ? ' ('+c.age+')' : ''}</span>`).join('')}</td>
-              <td>${(r.children||[]).length}</td>
+              <td>${1 + (r.children||[]).length} אנשים</td>
               <td style="font-size:0.75rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
+              <td><button onclick="deleteReg(${r.id})" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:1rem;" title="מחק רישום">🗑️</button></td>
             </tr>`).join('')
-          : `<tr><td colspan="6" class="empty-slot">אין רישומים לחלון זמן זה</td></tr>`;
+          : `<tr><td colspan="7" class="empty-slot">אין רישומים לחלון זמן זה</td></tr>`;
 
         return `
           <div class="slot-section">
@@ -395,8 +409,9 @@
                   <th>שם הורה</th>
                   <th>טלפון</th>
                   <th>ילדים</th>
-                  <th>כמות</th>
+                  <th>סה"כ</th>
                   <th>שעת רישום</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -408,7 +423,7 @@
         <div class="day-block">
           <div class="day-header">
             <span>${hebrewDay(date)} — ${formatDate(date)}</span>
-            <span class="day-total">${dayTotal} ילדים בסה"כ</span>
+            <span class="day-total">${dayTotal} אנשים בסה"כ</span>
           </div>
           ${slotsHtml || '<div class="empty-slot">אין נתונים</div>'}
         </div>`;

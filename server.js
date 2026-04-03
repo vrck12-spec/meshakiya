@@ -197,6 +197,27 @@ app.get('/api/admin', async (req, res) => {
   catch (e) { res.status(500).json({ error: 'שגיאת שרת' }); }
 });
 
+app.delete('/api/admin/registration/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (db) {
+      await db.query('DELETE FROM registrations WHERE id=$1', [id]);
+    } else {
+      const data = readJSON();
+      Object.keys(data).forEach(date => {
+        Object.keys(data[date]).forEach(slot => {
+          data[date][slot] = data[date][slot].filter(r => r.id !== id);
+        });
+      });
+      writeJSON(data);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // ===== הפעלה =====
 initDB().then(() => {
   app.listen(PORT, () => {
