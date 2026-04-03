@@ -8,8 +8,8 @@ const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי חול המועד =====
 const START_DATE = '2026-04-05';
-const END_DATE   = '2026-04-08';
-const ACTIVE_DAYS = [0, 1, 2, 3]; // א׳–ד׳
+const END_DATE   = '2026-04-10';
+const ACTIVE_DAYS = [0, 1, 2, 4, 5]; // א׳, ב׳, ג׳, ה׳, ו׳ (ד׳ סגור)
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -102,15 +102,20 @@ async function getAllData() {
 function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
-  const slots = [
+
+  const morningSlots = [
     { id: 'morning1', label: '09:00–11:00', display: 'בוקר א׳' },
     { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
   ];
-  if (day !== 3) {
-    slots.push({ id: 'afternoon1', label: '15:00–16:30', display: 'אחה"צ א׳' });
-    slots.push({ id: 'afternoon2', label: '16:30–18:00', display: 'אחה"צ ב׳' });
-  }
-  return slots;
+  const afternoonSlots = [
+    { id: 'afternoon1', label: '15:00–16:30', display: 'אחה"צ א׳' },
+    { id: 'afternoon2', label: '16:30–18:00', display: 'אחה"צ ב׳' },
+  ];
+
+  // ג׳ (2) ו-ו׳ (5): בוקר בלבד
+  if (day === 2 || day === 5) return morningSlots;
+  // א׳ (0), ב׳ (1), ה׳ (4): בוקר + אחה"צ
+  return [...morningSlots, ...afternoonSlots];
 }
 
 function countPeople(regs) {
