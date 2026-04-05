@@ -531,31 +531,42 @@
             </tr>`).join('')
           : `<tr><td colspan="7" class="empty-slot">אין רישומים לחלון זמן זה</td></tr>`;
 
+        const slotKey = date + '-' + slotId;
+        const passed  = isSlotPassed(date, slotId);
+        const hiddenStyle = passed ? 'display:none' : '';
+        const icon = passed ? '▼' : '▲';
+        const passedLabel = passed ? ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal">— חלף</span>' : '';
+
         return `
           <div class="slot-section">
-            <div class="slot-title">
-              <h3>${slotLabel(slotId)}</h3>
-              <div class="capacity-bar-wrap">
-                <div class="capacity-bar">
-                  <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
+            <div class="slot-title" style="cursor:pointer" onclick="toggleSlot('${slotKey}')">
+              <h3>${slotLabel(slotId)}${passedLabel}</h3>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div class="capacity-bar-wrap">
+                  <div class="capacity-bar">
+                    <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
+                  </div>
+                  <span class="capacity-text">${count}/30 אנשים</span>
                 </div>
-                <span class="capacity-text">${count}/30 אנשים</span>
+                <span id="slot-icon-${slotKey}" style="font-size:0.85rem;color:#aaa">${icon}</span>
               </div>
             </div>
-            <table class="reg-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>שם הורה</th>
-                  <th>טלפון</th>
-                  <th>ילדים</th>
-                  <th>סה"כ</th>
-                  <th>שעת רישום</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
+            <div id="slot-body-${slotKey}" style="${hiddenStyle}">
+              <table class="reg-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>שם הורה</th>
+                    <th>טלפון</th>
+                    <th>ילדים</th>
+                    <th>סה"כ</th>
+                    <th>שעת רישום</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
           </div>`;
       }).join('');
 
@@ -600,6 +611,22 @@
     a.href = URL.createObjectURL(blob);
     a.download = 'רישומים_משחקיה.csv';
     a.click();
+  }
+
+  const SLOT_END = { morning1:'11:00', morning2:'13:00', afternoon1:'16:30', afternoon2:'18:00' };
+
+  function isSlotPassed(dateStr, slotId) {
+    const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
+    const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
+    return new Date() > end;
+  }
+
+  function toggleSlot(id) {
+    const body = document.getElementById('slot-body-' + id);
+    const icon = document.getElementById('slot-icon-' + id);
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    icon.textContent = collapsed ? '▲' : '▼';
   }
 
   function toggleAlerts() {
