@@ -507,7 +507,8 @@
 
     document.getElementById('daysContainer').innerHTML = dates.map(date => {
       const dayData = allData[date] || {};
-      const slots = Object.keys(dayData);
+      const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+      const slots = Object.keys(dayData).sort((a,b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b));
       let dayTotal = 0;
       slots.forEach(s => { dayTotal += countPeople(dayData[s] || []); });
 
