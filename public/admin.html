@@ -570,13 +570,23 @@
           </div>`;
       }).join('');
 
+      const dayPassed = new Date(date + 'T23:59:59') < new Date();
+      const dayHidden = dayPassed ? 'display:none' : '';
+      const dayIcon   = dayPassed ? '▼' : '▲';
+      const dayPassedLabel = dayPassed ? ' <span style="font-size:0.75rem;font-weight:normal;opacity:0.7">— חלף</span>' : '';
+
       return `
         <div class="day-block">
-          <div class="day-header">
-            <span>${hebrewDay(date)} — ${formatDate(date)}</span>
-            <span class="day-total">${dayTotal} אנשים בסה"כ</span>
+          <div class="day-header" style="cursor:pointer" onclick="toggleDay('${date}')">
+            <span>${hebrewDay(date)} — ${formatDate(date)}${dayPassedLabel}</span>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="day-total">${dayTotal} אנשים בסה"כ</span>
+              <span id="day-icon-${date}" style="font-size:0.85rem;opacity:0.8">${dayIcon}</span>
+            </div>
           </div>
-          ${slotsHtml || '<div class="empty-slot">אין נתונים</div>'}
+          <div id="day-body-${date}" style="${dayHidden}">
+            ${slotsHtml || '<div class="empty-slot">אין נתונים</div>'}
+          </div>
         </div>`;
     }).join('');
   }
@@ -619,6 +629,14 @@
     const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
     const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
     return new Date() > end;
+  }
+
+  function toggleDay(date) {
+    const body = document.getElementById('day-body-' + date);
+    const icon = document.getElementById('day-icon-' + date);
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    icon.textContent = collapsed ? '▲' : '▼';
   }
 
   function toggleSlot(id) {
