@@ -7,10 +7,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
-// ===== הגדרת תאריכי חול המועד =====
-const START_DATE = '2026-04-05';
-const END_DATE   = '2026-04-10';
-const ACTIVE_DAYS = [0, 1, 2, 4, 5]; // א׳, ב׳, ג׳, ה׳, ו׳ (ד׳ סגור)
+// ===== הגדרת תאריכי פעילות =====
+const START_DATE = '2026-04-13';
+const END_DATE   = '2026-04-18';
+const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
 
 // ===== הגדרת שולח מייל =====
 const mailer = nodemailer.createTransport({
@@ -129,9 +129,9 @@ function getSlotsForDate(dateStr) {
     { id: 'afternoon2', label: '16:30–18:00', display: 'אחה"צ ב׳' },
   ];
 
-  // ג׳ (2) ו-ו׳ (5): בוקר בלבד
-  if (day === 2 || day === 5) return morningSlots;
-  // א׳ (0), ב׳ (1), ה׳ (4): בוקר + אחה"צ
+  // ו׳ (5): בוקר בלבד
+  if (day === 5) return morningSlots;
+  // א׳–ה׳ (0–4): בוקר + אחה"צ
   return [...morningSlots, ...afternoonSlots];
 }
 
