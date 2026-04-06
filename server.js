@@ -13,7 +13,7 @@ const END_DATE   = '2026-04-17';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
 
 // ===== הגדרת שולח מייל =====
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -145,7 +145,7 @@ function hebrewDate(dateStr) {
 
 // ===== שליחת אישור במייל =====
 async function sendConfirmationEmail(email, data) {
-  if (!process.env.GMAIL_USER || !email) return;
+  if (!resend || !email) return;
 
   const childrenList = data.children.map(c =>
     `<li>${c.name}${c.age != null ? ` (גיל ${c.age})` : ''}</li>`
