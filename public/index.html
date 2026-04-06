@@ -412,6 +412,11 @@
       </div>
 
       <div class="form-group">
+        <label>כתובת מייל <span style="font-weight:normal;color:#aaa;font-size:0.82rem">(אופציונלי — לקבלת אישור)</span></label>
+        <input type="email" id="email" placeholder="example@gmail.com" dir="ltr" />
+      </div>
+
+      <div class="form-group">
         <label>ילדים המגיעים</label>
         <div class="child-labels">
           <span>שם הילד/ה</span>
@@ -581,6 +586,7 @@
 
     const parentName = document.getElementById('parentName').value.trim();
     const phone      = document.getElementById('phone').value.trim();
+    const email      = document.getElementById('email').value.trim();
     const children   = getChildren();
 
     if (!selectedDate || !selectedSlot) {
@@ -599,7 +605,7 @@
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: selectedDate, slot: selectedSlot, parentName, phone, children })
+        body: JSON.stringify({ date: selectedDate, slot: selectedSlot, parentName, phone, email, children })
       });
 
       const data = await res.json();
@@ -643,6 +649,7 @@
     document.getElementById('step2Card').style.display = 'none';
     document.getElementById('parentName').value = '';
     document.getElementById('phone').value = '';
+    document.getElementById('email').value = '';
     document.getElementById('childrenList').innerHTML = '';
     childCount = 0;
     selectedDate = null;

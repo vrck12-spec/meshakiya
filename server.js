@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,6 +11,15 @@ const MAX_PER_SLOT = 30;
 const START_DATE = '2026-04-05';
 const END_DATE   = '2026-04-10';
 const ACTIVE_DAYS = [0, 1, 2, 4, 5]; // א׳, ב׳, ג׳, ה׳, ו׳ (ד׳ סגור)
+
+// ===== הגדרת שולח מייל =====
+const mailer = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  }
+});
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -28,9 +38,14 @@ async function initDB() {
       slot TEXT NOT NULL,
       parent_name TEXT NOT NULL,
       phone TEXT NOT NULL,
+      email TEXT,
       children JSONB NOT NULL,
       registered_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `);
+  // הוספת עמודת מייל לטבלה קיימת (אם עדיין לא קיימת)
+  await db.query(`
+    ALTER TABLE registrations ADD COLUMN IF NOT EXISTS email TEXT
   `);
   console.log('✅ מסד נתונים PostgreSQL מחובר');
 }
@@ -48,13 +63,14 @@ function writeJSON(data) {
 async function getSlotRegistrations(date, slot) {
   if (db) {
     const res = await db.query(
-      'SELECT id, parent_name, phone, children, registered_at FROM registrations WHERE date=$1 AND slot=$2 ORDER BY id',
+      'SELECT id, parent_name, phone, email, children, registered_at FROM registrations WHERE date=$1 AND slot=$2 ORDER BY id',
       [date, slot]
     );
     return res.rows.map(r => ({
       id: Number(r.id),
       parentName: r.parent_name,
       phone: r.phone,
+      email: r.email,
       children: r.children,
       registeredAt: r.registered_at
     }));
@@ -66,8 +82,8 @@ async function getSlotRegistrations(date, slot) {
 async function addRegistration(date, slot, entry) {
   if (db) {
     await db.query(
-      'INSERT INTO registrations (id, date, slot, parent_name, phone, children, registered_at) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [entry.id, date, slot, entry.parentName, entry.phone, JSON.stringify(entry.children), entry.registeredAt]
+      'INSERT INTO registrations (id, date, slot, parent_name, phone, email, children, registered_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [entry.id, date, slot, entry.parentName, entry.phone, entry.email || null, JSON.stringify(entry.children), entry.registeredAt]
     );
     return;
   }
@@ -89,6 +105,7 @@ async function getAllData() {
         id: Number(r.id),
         parentName: r.parent_name,
         phone: r.phone,
+        email: r.email,
         children: r.children,
         registeredAt: r.registered_at
       });
@@ -127,6 +144,63 @@ function hebrewDay(dateStr) {
   return 'יום ' + days[new Date(dateStr + 'T12:00:00').getDay()];
 }
 
+function hebrewDate(dateStr) {
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ===== שליחת אישור במייל =====
+async function sendConfirmationEmail(email, data) {
+  if (!process.env.GMAIL_USER || !email) return;
+
+  const childrenList = data.children.map(c =>
+    `<li>${c.name}${c.age != null ? ` (גיל ${c.age})` : ''}</li>`
+  ).join('');
+
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #1565c0, #283593); color: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 2.5rem;">🎠</div>
+        <h1 style="margin: 10px 0 4px;">משחקיה עירונית 8</h1>
+        <p style="opacity: 0.85; margin: 0;">אישור רישום</p>
+      </div>
+
+      <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <p style="font-size: 1.1rem; color: #333;">שלום <strong>${data.parentName}</strong>,</p>
+        <p style="color: #555;">רישומך למשחקיה העירונית התקבל בהצלחה! 🎉</p>
+      </div>
+
+      <div style="background: white; border: 2px solid #e3f2fd; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h2 style="color: #1565c0; margin-top: 0;">פרטי הביקור</h2>
+        <p>📅 <strong>${data.dayName} — ${hebrewDate(data.date)}</strong></p>
+        <p>🕐 <strong>${data.slotLabel}</strong></p>
+        <p>👨‍👩‍👧 <strong>ילדים שנרשמו:</strong></p>
+        <ul style="color: #333;">${childrenList}</ul>
+      </div>
+
+      <div style="background: #fff8e1; border-right: 4px solid #f57c00; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <h3 style="color: #e65100; margin-top: 0;">📋 נהלים חשובים</h3>
+        <ul style="color: #555; line-height: 1.8;">
+          <li>🚫 אסור להכניס שתייה ואוכל למתחם</li>
+          <li>👟 חובה על כולם (כולל הורים) להוריד נעליים בכניסה</li>
+          <li>👨‍👧 הכניסה בליווי מבוגר בלבד</li>
+        </ul>
+      </div>
+
+      <p style="text-align: center; color: #aaa; font-size: 0.85rem;">מחכים לכם! 🎠 — צוות משחקיה עירונית 8</p>
+    </div>
+  `;
+
+  await mailer.sendMail({
+    from: `"משחקיה עירונית 8" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: `✅ אישור רישום למשחקיה — ${data.dayName} ${hebrewDate(data.date)}`,
+    html,
+  });
+
+  console.log(`📧 מייל אישור נשלח ל: ${email}`);
+}
+
 // ===== Middleware =====
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -160,7 +234,7 @@ app.get('/api/dates', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { date, slot, parentName, phone, children } = req.body;
+    const { date, slot, parentName, phone, email, children } = req.body;
     if (!date || !slot || !parentName || !phone || !children?.length)
       return res.status(400).json({ error: 'נא למלא את כל השדות הנדרשים' });
     if (!getSlotsForDate(date).find(s => s.id === slot))
@@ -172,16 +246,17 @@ app.post('/api/register', async (req, res) => {
       return res.status(409).json({ error: 'מצטערים, הרישום למועד זה נסגר — הגענו ל-30 אנשים', full: true });
 
     const remaining = MAX_PER_SLOT - peopleCount;
-    const newPeople = 1 + children.length; // הורה + ילדים
+    const newPeople = 1 + children.length;
     if (newPeople > remaining)
       return res.status(409).json({ error: `נותרו רק ${remaining} מקומות (כולל הורים)`, remaining });
 
-    const entry = { id: Date.now(), parentName, phone, children, registeredAt: new Date().toISOString() };
+    const entry = { id: Date.now(), parentName, phone, email: email || null, children, registeredAt: new Date().toISOString() };
     await addRegistration(date, slot, entry);
 
     const newTotal = peopleCount + newPeople;
     const slotInfo = getSlotsForDate(date).find(s => s.id === slot);
-    res.json({
+
+    const responseData = {
       success: true,
       message: 'הרישום בוצע בהצלחה!',
       confirmationId: entry.id,
@@ -190,7 +265,18 @@ app.post('/api/register', async (req, res) => {
       childrenCount: children.length,
       totalRegistered: newTotal,
       remainingSpots: MAX_PER_SLOT - newTotal
-    });
+    };
+
+    res.json(responseData);
+
+    // שליחת מייל אישור (לא חוסם את התגובה)
+    if (email) {
+      sendConfirmationEmail(email, {
+        parentName, date, dayName: hebrewDay(date),
+        slotLabel: slotInfo?.label, children
+      }).catch(err => console.error('שגיאה בשליחת מייל:', err.message));
+    }
+
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'שגיאת שרת' });
@@ -229,5 +315,6 @@ initDB().then(() => {
     console.log(`\n🎠 משחקיה עירונית — מערכת רישום`);
     console.log(`✅ השרת פועל על: http://localhost:${PORT}`);
     console.log(db ? '   מצב: PostgreSQL ☁️' : '   מצב: קובץ JSON 💾 (מקומי)\n');
+    console.log(process.env.GMAIL_USER ? `📧 מייל: ${process.env.GMAIL_USER}` : '   מייל: לא מוגדר');
   });
 }).catch(e => { console.error('שגיאה באתחול:', e); process.exit(1); });
