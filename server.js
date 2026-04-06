@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,15 +13,7 @@ const END_DATE   = '2026-04-17';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
 
 // ===== הגדרת שולח מייל =====
-const mailer = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -193,8 +185,8 @@ async function sendConfirmationEmail(email, data) {
     </div>
   `;
 
-  await mailer.sendMail({
-    from: `"משחקיה עירונית 8" <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from: `משחקיה עירונית 8 <onboarding@resend.dev>`,
     to: email,
     subject: `✅ אישור רישום למשחקיה — ${data.dayName} ${hebrewDate(data.date)}`,
     html,
@@ -317,6 +309,6 @@ initDB().then(() => {
     console.log(`\n🎠 משחקיה עירונית — מערכת רישום`);
     console.log(`✅ השרת פועל על: http://localhost:${PORT}`);
     console.log(db ? '   מצב: PostgreSQL ☁️' : '   מצב: קובץ JSON 💾 (מקומי)\n');
-    console.log(process.env.GMAIL_USER ? `📧 מייל: ${process.env.GMAIL_USER}` : '   מייל: לא מוגדר');
+    console.log(process.env.RESEND_API_KEY ? '📧 Resend: מוגדר ✅' : '   מייל: לא מוגדר');
   });
 }).catch(e => { console.error('שגיאה באתחול:', e); process.exit(1); });
