@@ -440,6 +440,7 @@
     <p id="successSlot" class="detail"></p>
     <p id="successChildren"></p>
     <p id="successSpots" style="color:#888;font-size:0.85rem;margin-top:10px"></p>
+    <p id="successEmail" style="margin-top:12px;color:#1565c0;font-size:0.88rem;background:#e3f2fd;border-radius:8px;padding:10px 14px;display:none"></p>
     <p style="margin-top:16px;color:#555;font-size:0.88rem">נזכיר: יש להגיע עם נעליים שניתן להוריד בכניסה 👟</p>
     <button class="back-btn" onclick="resetForm()">רישום נוסף</button>
   </div>
@@ -611,7 +612,7 @@
       const data = await res.json();
 
       if (res.ok && data.success) {
-        showSuccess(data, children);
+        showSuccess(data, children, email);
       } else if (res.status === 409) {
         showMsg('warning', data.error);
         loadDates(); // Refresh slots
@@ -626,7 +627,7 @@
     btn.textContent = '✅ שלח רישום';
   }
 
-  function showSuccess(data, children) {
+  function showSuccess(data, children, email) {
     document.getElementById('formScreen').style.display = 'none';
     const s = document.getElementById('successScreen');
     s.style.display = 'block';
@@ -639,6 +640,15 @@
       data.remainingSpots > 0
         ? `נותרו עוד ${data.remainingSpots} מקומות פנויים בחלון זמן זה`
         : 'החלון מלא — אין יותר מקומות';
+
+    const emailEl = document.getElementById('successEmail');
+    if (email) {
+      emailEl.textContent = '📧 אישור רישום ישלח לכתובת המייל שלך. אם לא קיבלת — בדוק בתיקיית הספאם.';
+      emailEl.style.display = 'block';
+    } else {
+      emailEl.textContent = '';
+      emailEl.style.display = 'none';
+    }
 
     s.scrollIntoView({ behavior: 'smooth' });
   }
