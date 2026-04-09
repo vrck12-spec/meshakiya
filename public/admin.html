@@ -478,18 +478,23 @@
       border-radius: 16px;
       padding: 18px 16px 14px;
       text-align: center;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-      color: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border: 2px solid transparent;
     }
     .mgr-kpi-card .kpi-icon { font-size: 1.7rem; display: block; margin-bottom: 6px; }
-    .mgr-kpi-card .kpi-num  { font-size: 2.1rem; font-weight: bold; line-height: 1; }
-    .mgr-kpi-card .kpi-lbl  { font-size: 0.78rem; opacity: 0.9; margin-top: 5px; }
-    .mgr-kpi-card .kpi-sub  { font-size: 0.68rem; opacity: 0.72; margin-top: 2px; }
-    .mgr-kpi-card.blue   { background: linear-gradient(135deg, #1565c0, #1976d2); }
-    .mgr-kpi-card.teal   { background: linear-gradient(135deg, #00695c, #00897b); }
-    .mgr-kpi-card.orange { background: linear-gradient(135deg, #e65100, #f57c00); }
-    .mgr-kpi-card.purple { background: linear-gradient(135deg, #4527a0, #5e35b1); }
-    .mgr-kpi-card.green  { background: linear-gradient(135deg, #2e7d32, #43a047); }
+    .mgr-kpi-card .kpi-num  { font-size: 2.1rem; font-weight: 800; line-height: 1; }
+    .mgr-kpi-card .kpi-lbl  { font-size: 0.78rem; margin-top: 5px; font-weight: 600; color: #444; }
+    .mgr-kpi-card .kpi-sub  { font-size: 0.68rem; color: #777; margin-top: 2px; }
+    .mgr-kpi-card.blue   { background: #e8f0fe; border-color: #aec6fb; }
+    .mgr-kpi-card.blue   .kpi-num { color: #1a56db; }
+    .mgr-kpi-card.teal   { background: #e0f4f1; border-color: #80cbc4; }
+    .mgr-kpi-card.teal   .kpi-num { color: #00695c; }
+    .mgr-kpi-card.orange { background: #fff3e0; border-color: #ffcc80; }
+    .mgr-kpi-card.orange .kpi-num { color: #e65100; }
+    .mgr-kpi-card.purple { background: #ede7f6; border-color: #b39ddb; }
+    .mgr-kpi-card.purple .kpi-num { color: #4527a0; }
+    .mgr-kpi-card.green  { background: #e8f5e9; border-color: #a5d6a7; }
+    .mgr-kpi-card.green  .kpi-num { color: #2e7d32; }
 
     /* ── Day summary split ── */
     .mgr-period-label {
