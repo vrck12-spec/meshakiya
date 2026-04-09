@@ -18,23 +18,42 @@
     .topbar {
       background: linear-gradient(135deg, #1565c0, #283593);
       color: white;
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .topbar h1 { font-size: 1.2rem; }
-    .topbar .sub { font-size: 0.82rem; opacity: 0.8; margin-top: 2px; }
+    .topbar-title .h1 { font-size: 1.1rem; font-weight: bold; }
+    .topbar-title .sub { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+
+    .topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .topbar-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.4);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .topbar-btn:hover { background: rgba(255,255,255,0.28); }
+    .topbar-btn.active { background: white; color: #1565c0; border-color: white; }
 
     .export-btn {
       background: white;
       color: #1565c0;
       border: none;
-      padding: 9px 18px;
+      padding: 8px 16px;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
       font-family: inherit;
@@ -94,32 +113,36 @@
     .login-err { color: #c62828; font-size: 0.85rem; margin-top: 10px; display: none; }
 
     /* ===== Main ===== */
-    #mainScreen { display: none; padding: 24px; max-width: 960px; margin: 0 auto; }
+    #mainScreen { display: none; padding: 20px; max-width: 980px; margin: 0 auto; }
 
     /* ===== Stats ===== */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
     .stat-card {
       background: white;
       border-radius: 14px;
-      padding: 18px 16px;
+      padding: 16px 14px;
       text-align: center;
       box-shadow: 0 2px 10px rgba(0,0,0,0.07);
     }
 
     .stat-card .num { font-size: 2rem; font-weight: bold; color: #1565c0; }
-    .stat-card .lbl { font-size: 0.8rem; color: #888; margin-top: 4px; }
+    .stat-card .lbl { font-size: 0.78rem; color: #888; margin-top: 4px; }
+    .stat-card .sub { font-size: 0.72rem; color: #aaa; margin-top: 2px; }
+    .stat-card.green .num { color: #2e7d32; }
+    .stat-card.orange .num { color: #e65100; }
+    .stat-card.red .num { color: #c62828; }
 
     /* ===== Day Blocks ===== */
     .day-block {
       background: white;
       border-radius: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.07);
       overflow: hidden;
     }
@@ -127,27 +150,29 @@
     .day-header {
       background: linear-gradient(135deg, #1565c0, #283593);
       color: white;
-      padding: 14px 20px;
+      padding: 13px 20px;
       font-size: 1rem;
       font-weight: bold;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
     }
 
-    .day-header .day-total { font-size: 0.85rem; opacity: 0.85; }
+    .day-header .day-total { font-size: 0.82rem; opacity: 0.85; }
 
-    .slot-section { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+    .slot-section { padding: 14px 18px; border-bottom: 1px solid #f0f0f0; }
     .slot-section:last-child { border-bottom: none; }
 
     .slot-title {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
     }
 
-    .slot-title h3 { font-size: 0.95rem; color: #333; }
+    .slot-title h3 { font-size: 0.92rem; color: #333; }
 
     .capacity-bar-wrap { display: flex; align-items: center; gap: 10px; }
     .capacity-bar {
@@ -156,29 +181,24 @@
       background: #e0e0e0;
       border-radius: 4px;
       overflow: hidden;
-      max-width: 200px;
+      max-width: 160px;
     }
-    .capacity-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.4s;
-    }
+    .capacity-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
     .capacity-fill.low    { background: #43a047; }
     .capacity-fill.medium { background: #fb8c00; }
     .capacity-fill.high   { background: #e53935; }
-
-    .capacity-text { font-size: 0.82rem; color: #666; white-space: nowrap; }
+    .capacity-text { font-size: 0.8rem; color: #666; white-space: nowrap; }
 
     /* ===== Table ===== */
     .reg-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
     }
 
     .reg-table th {
       background: #f5f7fa;
-      padding: 9px 12px;
+      padding: 8px 10px;
       text-align: right;
       color: #555;
       font-weight: 600;
@@ -186,7 +206,7 @@
     }
 
     .reg-table td {
-      padding: 9px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid #f0f0f0;
       color: #333;
       vertical-align: top;
@@ -200,16 +220,16 @@
       background: #e3f2fd;
       color: #1565c0;
       border-radius: 5px;
-      padding: 2px 8px;
-      font-size: 0.78rem;
+      padding: 2px 7px;
+      font-size: 0.76rem;
       margin: 2px 2px 2px 0;
     }
 
     .empty-slot {
       text-align: center;
       color: #bbb;
-      padding: 16px;
-      font-size: 0.88rem;
+      padding: 14px;
+      font-size: 0.86rem;
     }
 
     /* ===== Refresh ===== */
@@ -217,7 +237,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .refresh-btn {
@@ -225,109 +245,251 @@
       border: 2px solid #1565c0;
       color: #1565c0;
       border-radius: 8px;
-      padding: 7px 16px;
+      padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-family: inherit;
       transition: all 0.2s;
     }
     .refresh-btn:hover { background: #e3f2fd; }
+    .last-update { font-size: 0.78rem; color: #aaa; }
 
-    .last-update { font-size: 0.8rem; color: #aaa; }
-
-    /* ===== Dashboard ===== */
+    /* ===== Dashboard section ===== */
     .dashboard-section {
       background: white;
       border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 24px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.07);
     }
     .dashboard-section h2 {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       color: #666;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       font-weight: 600;
       border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
 
-    .stat-card .num { font-size: 2.2rem; font-weight: bold; color: #1565c0; }
-    .stat-card .lbl { font-size: 0.8rem; color: #888; margin-top: 4px; }
-    .stat-card .sub { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
-    .stat-card.green .num { color: #2e7d32; }
-    .stat-card.orange .num { color: #e65100; }
-    .stat-card.red .num { color: #c62828; }
-
-    /* Capacity Map */
-    .capacity-map {
+    /* ===== Capacity Map — simplified ===== */
+    .capmap-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 10px;
     }
 
-    .cap-cell {
-      border-radius: 10px;
-      padding: 12px 14px;
-      position: relative;
+    .capmap-day {
+      border: 1.5px solid #e0e0e0;
+      border-radius: 12px;
       overflow: hidden;
-      cursor: default;
-    }
-    .cap-cell.empty   { background: #f1f8e9; border: 2px solid #c8e6c9; }
-    .cap-cell.low     { background: #e8f5e9; border: 2px solid #a5d6a7; }
-    .cap-cell.medium  { background: #fff3e0; border: 2px solid #ffcc80; }
-    .cap-cell.high    { background: #fce4ec; border: 2px solid #ef9a9a; }
-    .cap-cell.full    { background: #ffebee; border: 2px solid #ef5350; }
-
-    .cap-cell .cap-day  { font-size: 0.78rem; color: #666; margin-bottom: 2px; }
-    .cap-cell .cap-slot { font-size: 0.82rem; font-weight: bold; color: #333; margin-bottom: 6px; }
-    .cap-cell .cap-num  { font-size: 1.4rem; font-weight: bold; }
-    .cap-cell.empty   .cap-num { color: #81c784; }
-    .cap-cell.low     .cap-num { color: #43a047; }
-    .cap-cell.medium  .cap-num { color: #fb8c00; }
-    .cap-cell.high    .cap-num { color: #e53935; }
-    .cap-cell.full    .cap-num { color: #c62828; }
-    .cap-cell .cap-of  { font-size: 0.72rem; color: #999; }
-    .cap-cell .cap-bar { height: 4px; border-radius: 2px; margin-top: 6px; background: #e0e0e0; }
-    .cap-cell .cap-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-    .cap-cell.empty   .cap-bar-fill { background: #81c784; }
-    .cap-cell.low     .cap-bar-fill { background: #43a047; }
-    .cap-cell.medium  .cap-bar-fill { background: #fb8c00; }
-    .cap-cell.high    .cap-bar-fill { background: #e53935; }
-    .cap-cell.full    .cap-bar-fill { background: #c62828; }
-    .full-badge {
-      position: absolute; top: 8px; left: 8px;
-      background: #c62828; color: white;
-      font-size: 0.65rem; padding: 2px 6px;
-      border-radius: 20px; font-weight: bold;
     }
 
-    /* Alerts */
-    .alerts-list { display: flex; flex-direction: column; gap: 8px; }
+    .capmap-day-header {
+      background: #f5f7fa;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      color: #444;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .capmap-slots { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .capmap-slot-row { display: flex; align-items: center; gap: 8px; }
+    .capmap-slot-name { font-size: 0.75rem; color: #666; width: 70px; flex-shrink: 0; }
+    .capmap-mini-bar-wrap { flex: 1; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+    .capmap-mini-bar { height: 100%; border-radius: 5px; transition: width 0.4s; }
+    .capmap-mini-bar.low    { background: #66bb6a; }
+    .capmap-mini-bar.medium { background: #ffa726; }
+    .capmap-mini-bar.high   { background: #ef5350; }
+    .capmap-mini-bar.full   { background: #c62828; }
+    .capmap-mini-bar.empty  { background: #ccc; }
+    .capmap-slot-num { font-size: 0.73rem; color: #888; width: 32px; text-align: left; flex-shrink: 0; }
+    .capmap-full-tag { font-size: 0.65rem; background: #c62828; color: white; border-radius: 10px; padding: 1px 5px; }
+
+    /* ===== Alerts ===== */
+    .alerts-list { display: flex; flex-direction: column; gap: 7px; }
     .alert-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-radius: 8px; font-size: 0.88rem;
+      padding: 9px 13px; border-radius: 8px; font-size: 0.86rem;
     }
     .alert-item.full   { background: #ffebee; color: #c62828; }
     .alert-item.almost { background: #fff3e0; color: #e65100; }
-    .alert-item.ok     { background: #f1f8e9; color: #2e7d32; font-size: 0.85rem; }
+    .alert-item.ok     { background: #f1f8e9; color: #2e7d32; }
+
+    /* ===========================
+       MANAGER DASHBOARD
+    =========================== */
+    #managerScreen {
+      display: none;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .mgr-hero {
+      background: linear-gradient(135deg, #1565c0, #283593);
+      color: white;
+      border-radius: 20px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 24px rgba(21,101,192,0.3);
+    }
+
+    .mgr-hero h2 { font-size: 1.5rem; margin-bottom: 4px; }
+    .mgr-hero .mgr-date { font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px; }
+
+    .mgr-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 14px;
+    }
+
+    .mgr-kpi {
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .mgr-kpi .kpi-num { font-size: 2.2rem; font-weight: bold; line-height: 1; }
+    .mgr-kpi .kpi-lbl { font-size: 0.78rem; opacity: 0.85; margin-top: 5px; }
+    .mgr-kpi .kpi-sub { font-size: 0.7rem; opacity: 0.65; margin-top: 2px; }
+
+    .mgr-section {
+      background: white;
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    .mgr-section h3 {
+      font-size: 1rem;
+      color: #1565c0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 10px;
+    }
+
+    /* Day summary table in manager view */
+    .mgr-day-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .mgr-day-table th {
+      background: #f5f7fa;
+      padding: 9px 12px;
+      text-align: right;
+      color: #555;
+      font-weight: 600;
+      border-bottom: 2px solid #e8e8e8;
+    }
+    .mgr-day-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f3f3;
+      vertical-align: middle;
+    }
+    .mgr-day-table tr:last-child td { border-bottom: none; }
+
+    .mgr-bar-wrap { display: flex; align-items: center; gap: 10px; }
+    .mgr-bar-bg {
+      flex: 1;
+      height: 12px;
+      background: #eee;
+      border-radius: 6px;
+      overflow: hidden;
+      max-width: 220px;
+    }
+    .mgr-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s;
+    }
+    .mgr-bar-fill.low    { background: linear-gradient(90deg, #66bb6a, #43a047); }
+    .mgr-bar-fill.medium { background: linear-gradient(90deg, #ffa726, #fb8c00); }
+    .mgr-bar-fill.high   { background: linear-gradient(90deg, #ef5350, #c62828); }
+    .mgr-bar-fill.full   { background: linear-gradient(90deg, #c62828, #b71c1c); }
+    .mgr-bar-pct { font-size: 0.8rem; color: #666; font-weight: bold; white-space: nowrap; }
+
+    /* status badge */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: bold;
+    }
+    .status-badge.empty  { background: #f1f8e9; color: #2e7d32; }
+    .status-badge.low    { background: #e8f5e9; color: #2e7d32; }
+    .status-badge.medium { background: #fff3e0; color: #e65100; }
+    .status-badge.high   { background: #fce4ec; color: #c62828; }
+    .status-badge.full   { background: #c62828; color: white; }
+
+    /* Occupancy gauge */
+    .mgr-gauge-wrap { text-align: center; padding: 10px 0 4px; }
+    .mgr-gauge-outer {
+      width: 140px; height: 70px; margin: 0 auto;
+      position: relative; overflow: hidden;
+    }
+    .mgr-gauge-bg {
+      position: absolute; top: 0; left: 0;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      border: 14px solid #eee;
+      clip-path: inset(0 0 50% 0);
+    }
+    .mgr-gauge-fill-wrap {
+      position: absolute; top: 0; left: 0;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      clip-path: inset(0 0 50% 0);
+    }
+    .mgr-gauge-fill {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      border: 14px solid #1565c0;
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .mgr-gauge-pct {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1565c0;
+    }
+    .mgr-gauge-lbl { font-size: 0.78rem; color: #888; margin-top: 4px; }
+
+    /* Highlight row */
+    .mgr-day-table tr.today-row td { background: #e3f2fd; font-weight: 600; }
 
     @media (max-width: 600px) {
-      #mainScreen { padding: 12px; }
-      .reg-table { font-size: 0.8rem; }
-      .reg-table th, .reg-table td { padding: 7px 8px; }
-      .capacity-map { grid-template-columns: repeat(2, 1fr); }
+      #mainScreen, #managerScreen { padding: 10px; }
+      .mgr-hero { padding: 20px 18px; }
+      .mgr-kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .reg-table { font-size: 0.78rem; }
+      .reg-table th, .reg-table td { padding: 6px 7px; }
+      .capmap-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
 
+<!-- Top Bar -->
 <div class="topbar">
-  <div>
-    <div class="h1" style="font-size:1.1rem;font-weight:bold">🎠 ניהול רישומים — משחקיה 8</div>
-    <div class="sub">פאנל מנהל</div>
+  <div class="topbar-title">
+    <div class="h1">🎠 משחקיה עירונית 8</div>
+    <div class="sub">פאנל ניהול</div>
   </div>
-  <button class="export-btn" onclick="exportCSV()">📥 ייצוא לאקסל (CSV)</button>
+  <div class="topbar-actions" id="topbarActions" style="display:none">
+    <button class="topbar-btn active" id="btnAdmin" onclick="switchView('admin')">📋 תצוגת מנהל</button>
+    <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
+    <button class="export-btn" onclick="exportCSV()">📥 ייצוא CSV</button>
+  </div>
 </div>
 
 <!-- Login -->
@@ -342,11 +504,11 @@
   </div>
 </div>
 
-<!-- Main -->
+<!-- ===================== ADMIN VIEW ===================== -->
 <div id="mainScreen">
   <div class="refresh-row">
     <span class="last-update" id="lastUpdate"></span>
-    <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
+    <button class="refresh-btn" onclick="loadData()">🔄 רענן</button>
   </div>
 
   <!-- Stats Cards -->
@@ -354,15 +516,15 @@
 
   <!-- Capacity Map -->
   <div class="dashboard-section">
-    <h2>🗺️ מפת קיבולת — כל חלונות הזמן במבט אחד</h2>
-    <div class="capacity-map" id="capacityMap"></div>
+    <h2>🗺️ מפת קיבולת</h2>
+    <div class="capmap-grid" id="capacityMap"></div>
   </div>
 
   <!-- Alerts -->
   <div class="dashboard-section" id="alertsSection">
     <h2 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleAlerts()">
       <span>🔔 התראות</span>
-      <span id="alertsToggleIcon" style="font-size:0.85rem;color:#aaa">▼ הרחב</span>
+      <span id="alertsToggleIcon" style="font-size:0.82rem;color:#aaa">▼ הרחב</span>
     </h2>
     <div class="alerts-list" id="alertsList" style="display:none"></div>
   </div>
@@ -371,51 +533,59 @@
   <div id="daysContainer"></div>
 </div>
 
+<!-- ===================== MANAGER VIEW ===================== -->
+<div id="managerScreen">
+
+  <!-- Hero KPIs -->
+  <div class="mgr-hero">
+    <h2>📊 דשבורד מנהלים — משחקיה עירונית 8</h2>
+    <div class="mgr-date" id="mgrDate"></div>
+    <div class="mgr-kpi-row" id="mgrKpis"></div>
+  </div>
+
+  <!-- Day-by-day summary -->
+  <div class="mgr-section">
+    <h3>📅 סיכום יומי</h3>
+    <table class="mgr-day-table">
+      <thead>
+        <tr>
+          <th>יום</th>
+          <th>תאריך</th>
+          <th>נרשמו</th>
+          <th>קיבולת</th>
+          <th>מילוי</th>
+          <th>סטטוס</th>
+        </tr>
+      </thead>
+      <tbody id="mgrDayTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Slot breakdown -->
+  <div class="mgr-section">
+    <h3>⏰ פירוט חלונות זמן</h3>
+    <div id="mgrSlotBreakdown"></div>
+  </div>
+
+  <!-- Print note -->
+  <div style="text-align:center;color:#bbb;font-size:0.78rem;margin-top:10px;margin-bottom:20px">
+    עודכן: <span id="mgrLastUpdate"></span>
+  </div>
+</div>
+
 <script>
-  const ADMIN_PASS = '1234'; // ← שנה את הסיסמה כאן
-
+  const ADMIN_PASS = '1234';
   let allData = {};
+  let currentView = 'admin';
 
+  // ── helpers ──────────────────────────────────────────────
   function countPeople(regs) {
     return regs.reduce((sum, r) => sum + 1 + (r.children || []).length, 0);
   }
 
-  async function deleteReg(id) {
-    if (!confirm('למחוק רישום זה?')) return;
-    try {
-      const res = await fetch('/api/admin/registration/' + id, { method: 'DELETE' });
-      if (res.ok) { loadData(); }
-      else { alert('שגיאה במחיקה'); }
-    } catch (e) { alert('שגיאת תקשורת'); }
-  }
-
-  function login() {
-    const val = document.getElementById('passInput').value;
-    if (val === ADMIN_PASS) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('mainScreen').style.display = 'block';
-      loadData();
-    } else {
-      document.getElementById('loginErr').style.display = 'block';
-    }
-  }
-
-  async function loadData() {
-    try {
-      const res = await fetch('/api/admin');
-      allData = await res.json();
-      render();
-      document.getElementById('lastUpdate').textContent =
-        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
-    } catch (e) {
-      alert('שגיאה בטעינת נתונים');
-    }
-  }
-
   function hebrewDay(dateStr) {
     const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-    const d = new Date(dateStr + 'T12:00:00');
-    return 'יום ' + days[d.getDay()];
+    return 'יום ' + days[new Date(dateStr + 'T12:00:00').getDay()];
   }
 
   function formatDate(dateStr) {
@@ -433,25 +603,100 @@
   }
 
   function slotShort(slotId) {
-    const labels = { morning1:'בוקר א׳', morning2:'בוקר ב׳', afternoon1:'אחה"צ א׳', afternoon2:'אחה"צ ב׳' };
-    return labels[slotId] || slotId;
+    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', afternoon1:'אחה"צ א׳', afternoon2:'אחה"צ ב׳' };
+    return m[slotId] || slotId;
   }
 
   function capClass(pct) {
-    if (pct === 0)   return 'empty';
-    if (pct < 50)    return 'low';
-    if (pct < 85)    return 'medium';
-    if (pct < 100)   return 'high';
+    if (pct === 0)  return 'empty';
+    if (pct < 50)   return 'low';
+    if (pct < 85)   return 'medium';
+    if (pct < 100)  return 'high';
     return 'full';
   }
 
+  function capLabel(pct) {
+    if (pct === 0)  return 'פנוי';
+    if (pct < 50)   return 'תפוסה נמוכה';
+    if (pct < 85)   return 'תפוסה בינונית';
+    if (pct < 100)  return 'כמעט מלא';
+    return 'מלא';
+  }
+
+  // ── date filter: today − 5 days to future ────────────────
+  function getVisibleDates(allDates) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - 5);
+    return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
+  }
+
+  const SLOT_END = { morning1:'11:00', morning2:'13:00', afternoon1:'16:30', afternoon2:'18:00' };
+  function isSlotPassed(dateStr, slotId) {
+    const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
+    const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
+    return new Date() > end;
+  }
+
+  // ── login ─────────────────────────────────────────────────
+  function login() {
+    if (document.getElementById('passInput').value === ADMIN_PASS) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen').style.display = 'block';
+      document.getElementById('topbarActions').style.display = 'flex';
+      loadData();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  }
+
+  // ── view switch ───────────────────────────────────────────
+  function switchView(v) {
+    currentView = v;
+    document.getElementById('mainScreen').style.display    = v === 'admin'   ? 'block' : 'none';
+    document.getElementById('managerScreen').style.display = v === 'manager' ? 'block' : 'none';
+    document.getElementById('btnAdmin').classList.toggle('active',   v === 'admin');
+    document.getElementById('btnManager').classList.toggle('active', v === 'manager');
+    if (v === 'manager') renderManager();
+  }
+
+  // ── data ──────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const res = await fetch('/api/admin');
+      allData = await res.json();
+      render();
+      if (currentView === 'manager') renderManager();
+      const now = new Date().toLocaleTimeString('he-IL');
+      document.getElementById('lastUpdate').textContent = 'עודכן: ' + now;
+      document.getElementById('mgrLastUpdate').textContent = now;
+    } catch (e) {
+      alert('שגיאה בטעינת נתונים');
+    }
+  }
+
+  // ── delete ────────────────────────────────────────────────
+  async function deleteReg(id) {
+    if (!confirm('למחוק רישום זה?')) return;
+    try {
+      const res = await fetch('/api/admin/registration/' + id, { method: 'DELETE' });
+      if (res.ok) loadData();
+      else alert('שגיאה במחיקה');
+    } catch { alert('שגיאת תקשורת'); }
+  }
+
+  // ── ADMIN RENDER ──────────────────────────────────────────
   function render() {
-    const dates = Object.keys(allData).sort();
+    const allDates = Object.keys(allData).sort();
+    const dates = getVisibleDates(allDates);
+
     let totalPeople = 0, totalChildren = 0, totalFamilies = 0;
     let totalCapacity = 0, fullSlots = 0, almostSlots = 0;
-    const allSlots = []; // for capacity map
+    const allSlots = [];
 
-    dates.forEach(date => {
+    // compute totals from ALL data (not just visible)
+    allDates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
         const people = countPeople(regs);
         totalPeople   += people;
@@ -461,203 +706,344 @@
         const pct = Math.round((people/30)*100);
         if (pct >= 100) fullSlots++;
         else if (pct >= 80) almostSlots++;
+      });
+    });
+
+    // capacity map uses only visible dates
+    dates.forEach(date => {
+      Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
+        const people = countPeople(regs);
+        const pct = Math.round((people/30)*100);
         allSlots.push({ date, slotId, people, pct });
       });
     });
 
     const remaining = totalCapacity - totalPeople;
 
-    // ===== Stats Cards =====
+    // Stats
     document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="num">${totalPeople}</div><div class="lbl">אנשים נרשמו</div><div class="sub">(כולל הורים)</div></div>
+      <div class="stat-card"><div class="num">${totalPeople}</div><div class="lbl">אנשים נרשמו</div><div class="sub">כולל הורים</div></div>
       <div class="stat-card green"><div class="num">${remaining}</div><div class="lbl">מקומות פנויים</div><div class="sub">מתוך ${totalCapacity}</div></div>
       <div class="stat-card"><div class="num">${totalFamilies}</div><div class="lbl">משפחות</div></div>
       <div class="stat-card"><div class="num">${totalChildren}</div><div class="lbl">ילדים</div></div>
-      <div class="stat-card red"><div class="num">${fullSlots}</div><div class="lbl">חלונות זמן מלאים</div></div>
-      <div class="stat-card orange"><div class="num">${almostSlots}</div><div class="lbl">חלונות זמן כמעט מלאים</div></div>
+      <div class="stat-card red"><div class="num">${fullSlots}</div><div class="lbl">חלונות מלאים</div></div>
+      <div class="stat-card orange"><div class="num">${almostSlots}</div><div class="lbl">כמעט מלאים</div></div>
     `;
 
-    // ===== Capacity Map =====
-    document.getElementById('capacityMap').innerHTML = allSlots.length
-      ? allSlots.map(s => `
-          <div class="cap-cell ${capClass(s.pct)}">
-            ${s.pct >= 100 ? '<span class="full-badge">מלא</span>' : ''}
-            <div class="cap-day">${hebrewDay(s.date)} ${formatDate(s.date)}</div>
-            <div class="cap-slot">${slotShort(s.slotId)}</div>
-            <div class="cap-num">${s.people}<span class="cap-of">/30</span></div>
-            <div class="cap-bar"><div class="cap-bar-fill" style="width:${Math.min(s.pct,100)}%"></div></div>
-          </div>`).join('')
-      : '<div style="color:#aaa;font-size:0.9rem">אין חלונות זמן עם רישומים עדיין</div>';
+    // Capacity Map — grouped by day
+    renderCapacityMap(dates);
 
-    // ===== Alerts =====
+    // Alerts
     const alerts = [];
-    allSlots.forEach(s => {
-      if (s.pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(s.date)} — ${slotShort(s.slotId)}</strong>: הגיע ל-30 אנשים — הרישום נסגר</div>`);
-      else if (s.pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(s.date)} — ${slotShort(s.slotId)}</strong>: ${s.people}/30 אנשים — נותרו ${30-s.people} מקומות בלבד</div>`);
+    dates.forEach(date => {
+      Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
+        const pct = Math.round((countPeople(regs)/30)*100);
+        if (pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(date)} — ${slotShort(slotId)}</strong>: נסגר (30/30)</div>`);
+        else if (pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(date)} — ${slotShort(slotId)}</strong>: ${countPeople(regs)}/30 — נותרו ${30-countPeople(regs)} מקומות</div>`);
+      });
     });
-    if (!alerts.length) alerts.push('<div class="alert-item ok">✅ אין התראות — כל חלונות הזמן תקינים</div>');
+    if (!alerts.length) alerts.push('<div class="alert-item ok">✅ אין התראות — כל החלונות תקינים</div>');
     document.getElementById('alertsList').innerHTML = alerts.join('');
 
-    // ===== Days =====
+    // Days detail
     if (!dates.length) {
       document.getElementById('daysContainer').innerHTML =
-        '<div style="text-align:center;color:#aaa;padding:40px;font-size:1rem">אין רישומים עדיין</div>';
+        '<div style="text-align:center;color:#aaa;padding:40px">אין נתונים לתצוגה</div>';
       return;
     }
 
+    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+
     document.getElementById('daysContainer').innerHTML = dates.map(date => {
       const dayData = allData[date] || {};
-      const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
       const slots = Object.keys(dayData).sort((a,b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b));
       let dayTotal = 0;
       slots.forEach(s => { dayTotal += countPeople(dayData[s] || []); });
+
+      const dayPassed = new Date(date + 'T23:59:59') < new Date();
+      const dayHidden = dayPassed ? 'display:none' : '';
+      const dayIcon   = dayPassed ? '▼' : '▲';
+      const dayPassedLabel = dayPassed ? ' <span style="font-size:0.72rem;font-weight:normal;opacity:0.7">— חלף</span>' : '';
 
       const slotsHtml = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
         const pct = Math.round((count / 30) * 100);
         const fillClass = pct < 50 ? 'low' : pct < 85 ? 'medium' : 'high';
-
-        const rows = regs.length
-          ? regs.map((r, i) => `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${r.parentName}</td>
-              <td dir="ltr">${r.phone}</td>
-              <td>${(r.children || []).map(c => `<span class="tag">${c.name}${c.age != null ? ' ('+c.age+')' : ''}</span>`).join('')}</td>
-              <td>${1 + (r.children||[]).length} אנשים</td>
-              <td style="font-size:0.75rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
-              <td><button onclick="deleteReg(${r.id})" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:1rem;" title="מחק רישום">🗑️</button></td>
-            </tr>`).join('')
-          : `<tr><td colspan="7" class="empty-slot">אין רישומים לחלון זמן זה</td></tr>`;
-
         const slotKey = date + '-' + slotId;
         const passed  = isSlotPassed(date, slotId);
         const hiddenStyle = passed ? 'display:none' : '';
         const icon = passed ? '▼' : '▲';
-        const passedLabel = passed ? ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal">— חלף</span>' : '';
+        const passedLabel = passed ? ' <span style="font-size:0.7rem;color:#aaa;font-weight:normal">— חלף</span>' : '';
+
+        const rows = regs.length
+          ? regs.map((r, i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td>${r.parentName}</td>
+              <td dir="ltr">${r.phone}</td>
+              <td>${(r.children||[]).map(c=>`<span class="tag">${c.name}${c.age!=null?' ('+c.age+')':''}</span>`).join('')}</td>
+              <td>${1+(r.children||[]).length} אנשים</td>
+              <td style="font-size:0.73rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
+              <td><button onclick="deleteReg(${r.id})" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:1rem" title="מחק">🗑️</button></td>
+            </tr>`).join('')
+          : `<tr><td colspan="7" class="empty-slot">אין רישומים</td></tr>`;
 
         return `
           <div class="slot-section">
-            <div class="slot-title" style="cursor:pointer" onclick="toggleSlot('${slotKey}')">
+            <div class="slot-title" onclick="toggleSlot('${slotKey}')">
               <h3>${slotLabel(slotId)}${passedLabel}</h3>
-              <div style="display:flex;align-items:center;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px">
                 <div class="capacity-bar-wrap">
                   <div class="capacity-bar">
                     <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
                   </div>
-                  <span class="capacity-text">${count}/30 אנשים</span>
+                  <span class="capacity-text">${count}/30</span>
                 </div>
-                <span id="slot-icon-${slotKey}" style="font-size:0.85rem;color:#aaa">${icon}</span>
+                <span id="slot-icon-${slotKey}" style="font-size:0.82rem;color:#aaa">${icon}</span>
               </div>
             </div>
             <div id="slot-body-${slotKey}" style="${hiddenStyle}">
               <table class="reg-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>שם הורה</th>
-                    <th>טלפון</th>
-                    <th>ילדים</th>
-                    <th>סה"כ</th>
-                    <th>שעת רישום</th>
-                    <th></th>
-                  </tr>
-                </thead>
+                <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th><th>שעה</th><th></th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
           </div>`;
       }).join('');
 
-      const dayPassed = new Date(date + 'T23:59:59') < new Date();
-      const dayHidden = dayPassed ? 'display:none' : '';
-      const dayIcon   = dayPassed ? '▼' : '▲';
-      const dayPassedLabel = dayPassed ? ' <span style="font-size:0.75rem;font-weight:normal;opacity:0.7">— חלף</span>' : '';
-
       return `
         <div class="day-block">
-          <div class="day-header" style="cursor:pointer" onclick="toggleDay('${date}')">
+          <div class="day-header" onclick="toggleDay('${date}')">
             <span>${hebrewDay(date)} — ${formatDate(date)}${dayPassedLabel}</span>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span class="day-total">${dayTotal} אנשים בסה"כ</span>
-              <span id="day-icon-${date}" style="font-size:0.85rem;opacity:0.8">${dayIcon}</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="day-total">${dayTotal} אנשים</span>
+              <span id="day-icon-${date}">${dayIcon}</span>
             </div>
           </div>
-          <div id="day-body-${date}" style="${dayHidden}">
-            ${slotsHtml || '<div class="empty-slot">אין נתונים</div>'}
-          </div>
+          <div id="day-body-${date}" style="${dayHidden}">${slotsHtml}</div>
         </div>`;
     }).join('');
   }
 
+  // ── Capacity Map ──────────────────────────────────────────
+  function renderCapacityMap(dates) {
+    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    if (!dates.length) {
+      document.getElementById('capacityMap').innerHTML = '<div style="color:#aaa;font-size:0.88rem">אין נתונים</div>';
+      return;
+    }
+
+    document.getElementById('capacityMap').innerHTML = dates.map(date => {
+      const dayData = allData[date] || {};
+      const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
+      if (!slots.length) return '';
+
+      const slotRows = slots.map(slotId => {
+        const regs = dayData[slotId] || [];
+        const count = countPeople(regs);
+        const pct = Math.min(Math.round((count/30)*100), 100);
+        const cls = capClass(pct);
+        return `
+          <div class="capmap-slot-row">
+            <span class="capmap-slot-name">${slotShort(slotId)}</span>
+            <div class="capmap-mini-bar-wrap">
+              <div class="capmap-mini-bar ${cls}" style="width:${pct}%"></div>
+            </div>
+            <span class="capmap-slot-num">${count}/30${pct>=100?' <span class="capmap-full-tag">מלא</span>':''}</span>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="capmap-day">
+          <div class="capmap-day-header">${hebrewDay(date)} · ${formatDate(date)}</div>
+          <div class="capmap-slots">${slotRows}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── MANAGER RENDER ────────────────────────────────────────
+  function renderManager() {
+    const allDates = Object.keys(allData).sort();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    // totals
+    let totalPeople = 0, totalChildren = 0, totalFamilies = 0, totalCapacity = 0;
+    allDates.forEach(date => {
+      Object.entries(allData[date] || {}).forEach(([, regs]) => {
+        totalPeople   += countPeople(regs);
+        totalFamilies += regs.length;
+        regs.forEach(r => { totalChildren += (r.children||[]).length; });
+        totalCapacity += 30;
+      });
+    });
+
+    const fillPct = totalCapacity ? Math.round((totalPeople/totalCapacity)*100) : 0;
+    const remaining = totalCapacity - totalPeople;
+
+    // Date line
+    document.getElementById('mgrDate').textContent =
+      'נכון ל-' + today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    // KPIs
+    document.getElementById('mgrKpis').innerHTML = `
+      <div class="mgr-kpi">
+        <div class="kpi-num">${totalPeople}</div>
+        <div class="kpi-lbl">אנשים נרשמו</div>
+        <div class="kpi-sub">כולל הורים</div>
+      </div>
+      <div class="mgr-kpi">
+        <div class="kpi-num">${totalFamilies}</div>
+        <div class="kpi-lbl">משפחות</div>
+      </div>
+      <div class="mgr-kpi">
+        <div class="kpi-num">${totalChildren}</div>
+        <div class="kpi-lbl">ילדים</div>
+      </div>
+      <div class="mgr-kpi">
+        <div class="kpi-num">${fillPct}%</div>
+        <div class="kpi-lbl">תפוסה כוללת</div>
+        <div class="kpi-sub">${totalPeople}/${totalCapacity}</div>
+      </div>
+      <div class="mgr-kpi">
+        <div class="kpi-num">${remaining}</div>
+        <div class="kpi-lbl">מקומות פנויים</div>
+      </div>
+    `;
+
+    // Day summary table — all event dates
+    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    const rows = allDates.map(date => {
+      const dayData = allData[date] || {};
+      let dayPeople = 0, dayCap = 0;
+      SLOT_ORDER.forEach(s => {
+        if (dayData[s]) {
+          dayPeople += countPeople(dayData[s]);
+          dayCap += 30;
+        }
+      });
+      if (!dayCap) return '';
+
+      const pct = Math.round((dayPeople/dayCap)*100);
+      const cls = capClass(pct);
+      const isToday = date === todayStr;
+      const isPast  = date < todayStr;
+
+      return `
+        <tr${isToday ? ' class="today-row"' : ''}>
+          <td>${hebrewDay(date)}${isToday ? ' <span style="font-size:0.7rem;background:#1565c0;color:white;border-radius:10px;padding:1px 6px">היום</span>' : ''}</td>
+          <td>${formatDate(date)}</td>
+          <td><strong>${dayPeople}</strong></td>
+          <td>${dayCap}</td>
+          <td>
+            <div class="mgr-bar-wrap">
+              <div class="mgr-bar-bg"><div class="mgr-bar-fill ${cls}" style="width:${pct}%"></div></div>
+              <span class="mgr-bar-pct">${pct}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span>
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('mgrDayTableBody').innerHTML = rows ||
+      '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">אין נתונים</td></tr>';
+
+    // Slot breakdown
+    const slotHtml = allDates.map(date => {
+      const dayData = allData[date] || {};
+      const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
+      if (!slots.length) return '';
+
+      const isPast = date < todayStr;
+
+      return `
+        <div style="margin-bottom:14px">
+          <div style="font-size:0.85rem;font-weight:bold;color:#444;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #f0f0f0">
+            ${hebrewDay(date)} — ${formatDate(date)}${isPast ? ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal">— חלף</span>' : ''}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+            ${slots.map(slotId => {
+              const regs = dayData[slotId] || [];
+              const count = countPeople(regs);
+              const pct = Math.min(Math.round((count/30)*100),100);
+              const cls = capClass(pct);
+              return `
+                <div style="background:#fafafa;border:1.5px solid #e8e8e8;border-radius:10px;padding:10px 14px">
+                  <div style="font-size:0.8rem;color:#666;margin-bottom:4px">${slotShort(slotId)}</div>
+                  <div style="font-size:1.3rem;font-weight:bold;color:#1565c0">${count}<span style="font-size:0.75rem;color:#aaa;font-weight:normal">/30</span></div>
+                  <div style="height:6px;background:#eee;border-radius:3px;margin-top:6px">
+                    <div style="height:100%;border-radius:3px;width:${pct}%;background:${cls==='full'?'#c62828':cls==='high'?'#ef5350':cls==='medium'?'#ffa726':'#66bb6a'}"></div>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('mgrSlotBreakdown').innerHTML = slotHtml ||
+      '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
+  }
+
+  // ── toggles ───────────────────────────────────────────────
+  function toggleDay(date) {
+    const body = document.getElementById('day-body-' + date);
+    const icon = document.getElementById('day-icon-' + date);
+    const open = body.style.display === 'none';
+    body.style.display = open ? '' : 'none';
+    icon.textContent = open ? '▲' : '▼';
+  }
+
+  function toggleSlot(id) {
+    const body = document.getElementById('slot-body-' + id);
+    const icon = document.getElementById('slot-icon-' + id);
+    const open = body.style.display === 'none';
+    body.style.display = open ? '' : 'none';
+    icon.textContent = open ? '▲' : '▼';
+  }
+
+  function toggleAlerts() {
+    const list = document.getElementById('alertsList');
+    const icon = document.getElementById('alertsToggleIcon');
+    const open = list.style.display === 'none';
+    list.style.display = open ? 'flex' : 'none';
+    icon.textContent = open ? '▲ צמצם' : '▼ הרחב';
+  }
+
+  // ── export CSV ────────────────────────────────────────────
   function exportCSV() {
     const rows = [['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום']];
-
     Object.keys(allData).sort().forEach(date => {
       Object.keys(allData[date]).forEach(slotId => {
         (allData[date][slotId] || []).forEach(r => {
           const names = (r.children||[]).map(c=>c.name).join(' | ');
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
-            date,
-            hebrewDay(date),
-            {'morning1':'בוקר א׳ 09:00-10:30','morning2':'בוקר ב׳ 10:30-12:00','afternoon1':'אחה"צ א׳ 15:00-16:30','afternoon2':'אחה"צ ב׳ 16:30-18:00'}[slotId] || slotId,
-            r.parentName,
-            r.phone,
-            names,
-            ages,
-            (r.children||[]).length,
+            date, hebrewDay(date),
+            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',afternoon1:'אחה"צ א׳ 15:00-16:30',afternoon2:'אחה"צ ב׳ 16:30-18:00'}[slotId]||slotId,
+            r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);
         });
       });
     });
-
     const bom = '\uFEFF';
-    const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = bom + rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'רישומים_משחקיה.csv';
     a.click();
   }
 
-  const SLOT_END = { morning1:'11:00', morning2:'13:00', afternoon1:'16:30', afternoon2:'18:00' };
-
-  function isSlotPassed(dateStr, slotId) {
-    const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
-    const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
-    return new Date() > end;
-  }
-
-  function toggleDay(date) {
-    const body = document.getElementById('day-body-' + date);
-    const icon = document.getElementById('day-icon-' + date);
-    const collapsed = body.style.display === 'none';
-    body.style.display = collapsed ? '' : 'none';
-    icon.textContent = collapsed ? '▲' : '▼';
-  }
-
-  function toggleSlot(id) {
-    const body = document.getElementById('slot-body-' + id);
-    const icon = document.getElementById('slot-icon-' + id);
-    const collapsed = body.style.display === 'none';
-    body.style.display = collapsed ? '' : 'none';
-    icon.textContent = collapsed ? '▲' : '▼';
-  }
-
-  function toggleAlerts() {
-    const list = document.getElementById('alertsList');
-    const icon = document.getElementById('alertsToggleIcon');
-    const collapsed = list.style.display === 'none';
-    list.style.display = collapsed ? 'flex' : 'none';
-    icon.textContent = collapsed ? '▲ צמצם' : '▼ הרחב';
-  }
-
   // Auto-refresh every 60s
   setInterval(() => {
-    if (document.getElementById('mainScreen').style.display !== 'none') loadData();
+    if (document.getElementById('mainScreen').style.display !== 'none' ||
+        document.getElementById('managerScreen').style.display !== 'none') {
+      loadData();
+    }
   }, 60000);
 </script>
 </body>
