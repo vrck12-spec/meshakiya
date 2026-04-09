@@ -643,6 +643,7 @@
 <script>
   const ADMIN_PASS = '1234';
   let allData = {};
+  let allEventDates = []; // כל תאריכי האירוע (כולל ריקים)
   let currentView = 'admin';
 
   // ── helpers ──────────────────────────────────────────────
@@ -732,8 +733,14 @@
   // ── data ──────────────────────────────────────────────────
   async function loadData() {
     try {
-      const res = await fetch('/api/admin');
-      allData = await res.json();
+      const [adminRes, datesRes] = await Promise.all([
+        fetch('/api/admin'),
+        fetch('/api/dates')
+      ]);
+      allData = await adminRes.json();
+      const datesArr = await datesRes.json();
+      // שמור את כל תאריכי האירוע ממוינים
+      allEventDates = datesArr.map(d => d.date).sort();
       render();
       if (currentView === 'manager') renderManager();
       const now = new Date().toLocaleTimeString('he-IL');
@@ -963,15 +970,19 @@
 
   // ── MANAGER RENDER ────────────────────────────────────────
   function renderManager() {
-    const allDates = Object.keys(allData).sort();
+    // שלב את תאריכי האירוע (מ-api/dates) עם תאריכים שיש בהם רישומים
+    const regDates = Object.keys(allData);
+    const combined = [...new Set([...allEventDates, ...regDates])].sort();
+    const allDates = combined;
+
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayStr = today.toISOString().split('T')[0];
     const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
 
-    // ── totals ──
+    // ── totals (רק מרישומים קיימים) ──
     let totalPeople = 0, totalChildren = 0, totalFamilies = 0, totalCapacity = 0;
-    allDates.forEach(date => {
+    regDates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([, regs]) => {
         totalPeople   += countPeople(regs);
         totalFamilies += regs.length;
@@ -1018,13 +1029,20 @@
     `;
 
     // ── Day summary table — split past / future ──
+    // מחשב מספר חלונות זמן פעילים ביום (לפי הגיון השרת: ו׳=2, שאר=4)
+    function getSlotCount(dateStr) {
+      const day = new Date(dateStr + 'T12:00:00').getDay();
+      return day === 5 ? 2 : 4; // שישי = 2 חלונות, שאר = 4
+    }
+
     function buildDayRow(date) {
       const dayData = allData[date] || {};
       let dayPeople = 0, dayCap = 0;
       SLOT_ORDER.forEach(s => {
         if (dayData[s]) { dayPeople += countPeople(dayData[s]); dayCap += 30; }
       });
-      if (!dayCap) return '';
+      // אם אין רישומים — חשב קיבולת לפי מספר חלונות הזמן ביום
+      if (!dayCap) dayCap = getSlotCount(date) * 30;
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
       const isToday = date === todayStr;
