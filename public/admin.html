@@ -829,16 +829,17 @@
   // ── Capacity Map ──────────────────────────────────────────
   function renderCapacityMap(dates) {
     const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    const todayStr = new Date().toISOString().split('T')[0];
+
     if (!dates.length) {
       document.getElementById('capacityMap').innerHTML = '<div style="color:#aaa;font-size:0.88rem">אין נתונים</div>';
       return;
     }
 
-    document.getElementById('capacityMap').innerHTML = dates.map(date => {
+    function buildDayCard(date) {
       const dayData = allData[date] || {};
       const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
       if (!slots.length) return '';
-
       const slotRows = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
@@ -853,13 +854,43 @@
             <span class="capmap-slot-num">${count}/30${pct>=100?' <span class="capmap-full-tag">מלא</span>':''}</span>
           </div>`;
       }).join('');
-
       return `
         <div class="capmap-day">
           <div class="capmap-day-header">${hebrewDay(date)} · ${formatDate(date)}</div>
           <div class="capmap-slots">${slotRows}</div>
         </div>`;
-    }).join('');
+    }
+
+    const futureDates = dates.filter(d => d >= todayStr);
+    const pastDates   = dates.filter(d => d <  todayStr);
+
+    const futureHtml = futureDates.map(buildDayCard).join('') ||
+      '<div style="color:#aaa;font-size:0.85rem">אין תאריכים עתידיים</div>';
+
+    let pastHtml = '';
+    if (pastDates.length) {
+      const pastCards = pastDates.map(buildDayCard).join('');
+      pastHtml = `
+        <div style="grid-column:1/-1;margin-top:6px">
+          <div onclick="togglePastCapMap()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 2px;color:#999;font-size:0.82rem;user-select:none">
+            <span id="pastCapIcon">▶</span>
+            <span>תאריכים שחלפו (${pastDates.length})</span>
+          </div>
+          <div id="pastCapBody" style="display:none">
+            <div class="capmap-grid" style="margin-top:8px">${pastCards}</div>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('capacityMap').innerHTML = futureHtml + pastHtml;
+  }
+
+  function togglePastCapMap() {
+    const body = document.getElementById('pastCapBody');
+    const icon = document.getElementById('pastCapIcon');
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    icon.textContent = open ? '▼' : '▶';
   }
 
   // ── MANAGER RENDER ────────────────────────────────────────
