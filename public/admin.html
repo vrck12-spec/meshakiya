@@ -467,10 +467,92 @@
     /* Highlight row */
     .mgr-day-table tr.today-row td { background: #e3f2fd; font-weight: 600; }
 
+    /* ── KPI cards (outside hero) ── */
+    .mgr-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .mgr-kpi-card {
+      border-radius: 16px;
+      padding: 18px 16px 14px;
+      text-align: center;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      color: white;
+    }
+    .mgr-kpi-card .kpi-icon { font-size: 1.7rem; display: block; margin-bottom: 6px; }
+    .mgr-kpi-card .kpi-num  { font-size: 2.1rem; font-weight: bold; line-height: 1; }
+    .mgr-kpi-card .kpi-lbl  { font-size: 0.78rem; opacity: 0.9; margin-top: 5px; }
+    .mgr-kpi-card .kpi-sub  { font-size: 0.68rem; opacity: 0.72; margin-top: 2px; }
+    .mgr-kpi-card.blue   { background: linear-gradient(135deg, #1565c0, #1976d2); }
+    .mgr-kpi-card.teal   { background: linear-gradient(135deg, #00695c, #00897b); }
+    .mgr-kpi-card.orange { background: linear-gradient(135deg, #e65100, #f57c00); }
+    .mgr-kpi-card.purple { background: linear-gradient(135deg, #4527a0, #5e35b1); }
+    .mgr-kpi-card.green  { background: linear-gradient(135deg, #2e7d32, #43a047); }
+
+    /* ── Day summary split ── */
+    .mgr-period-label {
+      font-size: 0.78rem;
+      font-weight: bold;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px 4px;
+      background: #f9f9f9;
+    }
+    .mgr-day-table tr.past-row td { color: #999; }
+    .mgr-day-table tr.past-row .status-badge { opacity: 0.75; }
+
+    /* ── Compact slot breakdown ── */
+    .slot-breakdown-day { margin-bottom: 16px; }
+    .slot-breakdown-day-title {
+      font-size: 0.84rem; font-weight: bold; color: #555;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .slot-breakdown-day-title .past-tag {
+      font-size: 0.68rem; color: #bbb; font-weight: normal;
+    }
+    .slot-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .slot-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: #f5f7fa; border: 1.5px solid #e4e8ee;
+      border-radius: 20px; padding: 6px 14px 6px 10px;
+      font-size: 0.82rem; color: #333;
+      min-width: 160px;
+    }
+    .slot-pill .sp-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .slot-pill .sp-dot.low    { background: #43a047; }
+    .slot-pill .sp-dot.medium { background: #fb8c00; }
+    .slot-pill .sp-dot.high   { background: #ef5350; }
+    .slot-pill .sp-dot.full   { background: #c62828; }
+    .slot-pill .sp-dot.empty  { background: #ccc; }
+    .slot-pill .sp-name { flex: 1; }
+    .slot-pill .sp-count { font-weight: bold; color: #1565c0; }
+    .slot-pill .sp-count.full { color: #c62828; }
+    .slot-pill .sp-full-tag {
+      font-size: 0.65rem; background: #c62828; color: white;
+      border-radius: 8px; padding: 1px 5px; margin-right: 2px;
+    }
+
+    /* ── Print / PDF ── */
+    @media print {
+      body { background: white !important; }
+      .topbar, #mainScreen, #loginScreen, .mgr-section h3 button,
+      [onclick], .refresh-row { display: none !important; }
+      #managerScreen { display: block !important; padding: 0 !important; }
+      .mgr-hero { box-shadow: none !important; border-radius: 8px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mgr-kpi-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mgr-bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
     @media (max-width: 600px) {
       #mainScreen, #managerScreen { padding: 10px; }
       .mgr-hero { padding: 20px 18px; }
-      .mgr-kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .mgr-kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .reg-table { font-size: 0.78rem; }
       .reg-table th, .reg-table td { padding: 6px 7px; }
       .capmap-grid { grid-template-columns: repeat(2, 1fr); }
@@ -488,7 +570,8 @@
   <div class="topbar-actions" id="topbarActions" style="display:none">
     <button class="topbar-btn active" id="btnAdmin" onclick="switchView('admin')">📋 תצוגת מנהל</button>
     <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
-    <button class="export-btn" onclick="exportCSV()">📥 ייצוא CSV</button>
+    <button class="export-btn" onclick="exportCSV()">📥 CSV</button>
+    <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none">🖨️ PDF</button>
   </div>
 </div>
 
@@ -536,29 +619,19 @@
 <!-- ===================== MANAGER VIEW ===================== -->
 <div id="managerScreen">
 
-  <!-- Hero KPIs -->
+  <!-- Hero -->
   <div class="mgr-hero">
     <h2>📊 דשבורד מנהלים — משחקיה עירונית 8</h2>
     <div class="mgr-date" id="mgrDate"></div>
-    <div class="mgr-kpi-row" id="mgrKpis"></div>
   </div>
+
+  <!-- KPI cards (colored grid) -->
+  <div class="mgr-kpi-grid" id="mgrKpis"></div>
 
   <!-- Day-by-day summary -->
   <div class="mgr-section">
     <h3>📅 סיכום יומי</h3>
-    <table class="mgr-day-table">
-      <thead>
-        <tr>
-          <th>יום</th>
-          <th>תאריך</th>
-          <th>נרשמו</th>
-          <th>קיבולת</th>
-          <th>מילוי</th>
-          <th>סטטוס</th>
-        </tr>
-      </thead>
-      <tbody id="mgrDayTableBody"></tbody>
-    </table>
+    <div id="mgrDayContainer"><tbody id="mgrDayTableBody"></tbody></div>
   </div>
 
   <!-- Slot breakdown -->
@@ -658,6 +731,7 @@
     document.getElementById('managerScreen').style.display = v === 'manager' ? 'block' : 'none';
     document.getElementById('btnAdmin').classList.toggle('active',   v === 'admin');
     document.getElementById('btnManager').classList.toggle('active', v === 'manager');
+    document.getElementById('btnPdf').style.display = v === 'manager' ? 'inline-block' : 'none';
     if (v === 'manager') renderManager();
   }
 
@@ -899,8 +973,9 @@
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayStr = today.toISOString().split('T')[0];
+    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
 
-    // totals
+    // ── totals ──
     let totalPeople = 0, totalChildren = 0, totalFamilies = 0, totalCapacity = 0;
     allDates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([, regs]) => {
@@ -910,61 +985,59 @@
         totalCapacity += 30;
       });
     });
-
-    const fillPct = totalCapacity ? Math.round((totalPeople/totalCapacity)*100) : 0;
+    const fillPct  = totalCapacity ? Math.round((totalPeople/totalCapacity)*100) : 0;
     const remaining = totalCapacity - totalPeople;
 
-    // Date line
+    // ── hero date ──
     document.getElementById('mgrDate').textContent =
       'נכון ל-' + today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-    // KPIs
+    // ── KPI cards (colored, outside hero) ──
     document.getElementById('mgrKpis').innerHTML = `
-      <div class="mgr-kpi">
+      <div class="mgr-kpi-card blue">
+        <span class="kpi-icon">👥</span>
         <div class="kpi-num">${totalPeople}</div>
         <div class="kpi-lbl">אנשים נרשמו</div>
         <div class="kpi-sub">כולל הורים</div>
       </div>
-      <div class="mgr-kpi">
+      <div class="mgr-kpi-card teal">
+        <span class="kpi-icon">🏠</span>
         <div class="kpi-num">${totalFamilies}</div>
         <div class="kpi-lbl">משפחות</div>
       </div>
-      <div class="mgr-kpi">
+      <div class="mgr-kpi-card orange">
+        <span class="kpi-icon">🧒</span>
         <div class="kpi-num">${totalChildren}</div>
         <div class="kpi-lbl">ילדים</div>
       </div>
-      <div class="mgr-kpi">
+      <div class="mgr-kpi-card purple">
+        <span class="kpi-icon">📊</span>
         <div class="kpi-num">${fillPct}%</div>
         <div class="kpi-lbl">תפוסה כוללת</div>
-        <div class="kpi-sub">${totalPeople}/${totalCapacity}</div>
+        <div class="kpi-sub">${totalPeople} / ${totalCapacity}</div>
       </div>
-      <div class="mgr-kpi">
+      <div class="mgr-kpi-card green">
+        <span class="kpi-icon">✅</span>
         <div class="kpi-num">${remaining}</div>
         <div class="kpi-lbl">מקומות פנויים</div>
       </div>
     `;
 
-    // Day summary table — all event dates
-    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
-    const rows = allDates.map(date => {
+    // ── Day summary table — split past / future ──
+    function buildDayRow(date) {
       const dayData = allData[date] || {};
       let dayPeople = 0, dayCap = 0;
       SLOT_ORDER.forEach(s => {
-        if (dayData[s]) {
-          dayPeople += countPeople(dayData[s]);
-          dayCap += 30;
-        }
+        if (dayData[s]) { dayPeople += countPeople(dayData[s]); dayCap += 30; }
       });
       if (!dayCap) return '';
-
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
       const isToday = date === todayStr;
       const isPast  = date < todayStr;
-
       return `
-        <tr${isToday ? ' class="today-row"' : ''}>
-          <td>${hebrewDay(date)}${isToday ? ' <span style="font-size:0.7rem;background:#1565c0;color:white;border-radius:10px;padding:1px 6px">היום</span>' : ''}</td>
+        <tr class="${isToday ? 'today-row' : isPast ? 'past-row' : ''}">
+          <td>${hebrewDay(date)}${isToday ? ' <span style="font-size:0.68rem;background:#1565c0;color:white;border-radius:10px;padding:1px 6px">היום</span>' : ''}</td>
           <td>${formatDate(date)}</td>
           <td><strong>${dayPeople}</strong></td>
           <td>${dayCap}</td>
@@ -974,49 +1047,97 @@
               <span class="mgr-bar-pct">${pct}%</span>
             </div>
           </td>
-          <td>
-            <span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span>
-          </td>
+          <td><span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span></td>
         </tr>`;
-    }).join('');
+    }
 
-    document.getElementById('mgrDayTableBody').innerHTML = rows ||
-      '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">אין נתונים</td></tr>';
+    const futureDates = allDates.filter(d => d >= todayStr);
+    const pastDates   = allDates.filter(d => d <  todayStr);
 
-    // Slot breakdown
-    const slotHtml = allDates.map(date => {
+    const futureRows = futureDates.map(buildDayRow).join('');
+    const pastRows   = pastDates.map(buildDayRow).join('');
+
+    const thead = `<thead><tr><th>יום</th><th>תאריך</th><th>נרשמו</th><th>קיבולת</th><th>מילוי</th><th>סטטוס</th></tr></thead>`;
+
+    let tableHtml = '';
+    if (futureDates.length) {
+      tableHtml += `
+        <div style="font-size:0.78rem;font-weight:bold;color:#1565c0;margin-bottom:6px;margin-top:4px">📅 תאריכים קרובים</div>
+        <table class="mgr-day-table" style="margin-bottom:18px">${thead}<tbody>${futureRows}</tbody></table>`;
+    }
+    if (pastDates.length) {
+      tableHtml += `
+        <div style="font-size:0.78rem;font-weight:bold;color:#999;margin-bottom:6px;cursor:pointer;user-select:none" onclick="togglePastDaySummary()">
+          <span id="pastDaySummaryIcon">▶</span> תאריכים שחלפו (${pastDates.length})
+        </div>
+        <div id="pastDaySummaryBody" style="display:none">
+          <table class="mgr-day-table">${thead}<tbody>${pastRows}</tbody></table>
+        </div>`;
+    }
+    if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
+
+    document.getElementById('mgrDayTableBody').outerHTML = `<div id="mgrDayContainer">${tableHtml}</div>`;
+
+    // ── Compact slot breakdown — pills ──
+    function buildSlotPills(date) {
       const dayData = allData[date] || {};
       const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
       if (!slots.length) return '';
-
       const isPast = date < todayStr;
-
+      const pills = slots.map(slotId => {
+        const regs = dayData[slotId] || [];
+        const count = countPeople(regs);
+        const pct   = Math.min(Math.round((count/30)*100), 100);
+        const cls   = capClass(pct);
+        return `
+          <div class="slot-pill">
+            <span class="sp-dot ${cls}"></span>
+            <span class="sp-name">${slotShort(slotId)}</span>
+            <span class="sp-count ${cls==='full'?'full':''}">${count}/30</span>
+            ${pct>=100 ? '<span class="sp-full-tag">מלא</span>' : ''}
+          </div>`;
+      }).join('');
       return `
-        <div style="margin-bottom:14px">
-          <div style="font-size:0.85rem;font-weight:bold;color:#444;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #f0f0f0">
-            ${hebrewDay(date)} — ${formatDate(date)}${isPast ? ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal">— חלף</span>' : ''}
+        <div class="slot-breakdown-day">
+          <div class="slot-breakdown-day-title">
+            ${hebrewDay(date)} — ${formatDate(date)}
+            ${isPast ? '<span class="past-tag">— חלף</span>' : ''}
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
-            ${slots.map(slotId => {
-              const regs = dayData[slotId] || [];
-              const count = countPeople(regs);
-              const pct = Math.min(Math.round((count/30)*100),100);
-              const cls = capClass(pct);
-              return `
-                <div style="background:#fafafa;border:1.5px solid #e8e8e8;border-radius:10px;padding:10px 14px">
-                  <div style="font-size:0.8rem;color:#666;margin-bottom:4px">${slotShort(slotId)}</div>
-                  <div style="font-size:1.3rem;font-weight:bold;color:#1565c0">${count}<span style="font-size:0.75rem;color:#aaa;font-weight:normal">/30</span></div>
-                  <div style="height:6px;background:#eee;border-radius:3px;margin-top:6px">
-                    <div style="height:100%;border-radius:3px;width:${pct}%;background:${cls==='full'?'#c62828':cls==='high'?'#ef5350':cls==='medium'?'#ffa726':'#66bb6a'}"></div>
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>
+          <div class="slot-pills">${pills}</div>
         </div>`;
-    }).join('');
+    }
 
-    document.getElementById('mgrSlotBreakdown').innerHTML = slotHtml ||
+    const futureSlots = futureDates.map(buildSlotPills).join('');
+    const pastSlots   = pastDates.map(buildSlotPills).join('');
+
+    let breakdownHtml = '';
+    if (futureSlots) breakdownHtml += futureSlots;
+    if (pastSlots) {
+      breakdownHtml += `
+        <div style="font-size:0.78rem;font-weight:bold;color:#999;margin:10px 0 6px;cursor:pointer;user-select:none" onclick="togglePastSlots()">
+          <span id="pastSlotsIcon">▶</span> תאריכים שחלפו
+        </div>
+        <div id="pastSlotsBody" style="display:none">${pastSlots}</div>`;
+    }
+
+    document.getElementById('mgrSlotBreakdown').innerHTML = breakdownHtml ||
       '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
+  }
+
+  function togglePastDaySummary() {
+    const b = document.getElementById('pastDaySummaryBody');
+    const i = document.getElementById('pastDaySummaryIcon');
+    const open = b.style.display === 'none';
+    b.style.display = open ? 'block' : 'none';
+    i.textContent = open ? '▼' : '▶';
+  }
+
+  function togglePastSlots() {
+    const b = document.getElementById('pastSlotsBody');
+    const i = document.getElementById('pastSlotsIcon');
+    const open = b.style.display === 'none';
+    b.style.display = open ? 'block' : 'none';
+    i.textContent = open ? '▼' : '▶';
   }
 
   // ── toggles ───────────────────────────────────────────────
@@ -1067,6 +1188,11 @@
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'רישומים_משחקיה.csv';
     a.click();
+  }
+
+  // ── export PDF ───────────────────────────────────────────
+  function exportPDF() {
+    window.print();
   }
 
   // Auto-refresh every 60s
