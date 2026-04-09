@@ -570,8 +570,8 @@
   <div class="topbar-actions" id="topbarActions" style="display:none">
     <button class="topbar-btn active" id="btnAdmin" onclick="switchView('admin')">📋 תצוגת מנהל</button>
     <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
-    <button class="export-btn" onclick="exportCSV()">📥 CSV</button>
-    <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none">🖨️ PDF</button>
+    <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
+    <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
   </div>
 </div>
 
@@ -631,13 +631,7 @@
   <!-- Day-by-day summary -->
   <div class="mgr-section">
     <h3>📅 סיכום יומי</h3>
-    <div id="mgrDayContainer"><tbody id="mgrDayTableBody"></tbody></div>
-  </div>
-
-  <!-- Slot breakdown -->
-  <div class="mgr-section">
-    <h3>⏰ פירוט חלונות זמן</h3>
-    <div id="mgrSlotBreakdown"></div>
+    <div id="mgrDayContainer"></div>
   </div>
 
   <!-- Print note -->
@@ -1076,65 +1070,13 @@
     }
     if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
 
-    document.getElementById('mgrDayTableBody').outerHTML = `<div id="mgrDayContainer">${tableHtml}</div>`;
-
-    // ── Compact slot breakdown — pills ──
-    function buildSlotPills(date) {
-      const dayData = allData[date] || {};
-      const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
-      if (!slots.length) return '';
-      const isPast = date < todayStr;
-      const pills = slots.map(slotId => {
-        const regs = dayData[slotId] || [];
-        const count = countPeople(regs);
-        const pct   = Math.min(Math.round((count/30)*100), 100);
-        const cls   = capClass(pct);
-        return `
-          <div class="slot-pill">
-            <span class="sp-dot ${cls}"></span>
-            <span class="sp-name">${slotShort(slotId)}</span>
-            <span class="sp-count ${cls==='full'?'full':''}">${count}/30</span>
-            ${pct>=100 ? '<span class="sp-full-tag">מלא</span>' : ''}
-          </div>`;
-      }).join('');
-      return `
-        <div class="slot-breakdown-day">
-          <div class="slot-breakdown-day-title">
-            ${hebrewDay(date)} — ${formatDate(date)}
-            ${isPast ? '<span class="past-tag">— חלף</span>' : ''}
-          </div>
-          <div class="slot-pills">${pills}</div>
-        </div>`;
-    }
-
-    const futureSlots = futureDates.map(buildSlotPills).join('');
-    const pastSlots   = pastDates.map(buildSlotPills).join('');
-
-    let breakdownHtml = '';
-    if (futureSlots) breakdownHtml += futureSlots;
-    if (pastSlots) {
-      breakdownHtml += `
-        <div style="font-size:0.78rem;font-weight:bold;color:#999;margin:10px 0 6px;cursor:pointer;user-select:none" onclick="togglePastSlots()">
-          <span id="pastSlotsIcon">▶</span> תאריכים שחלפו
-        </div>
-        <div id="pastSlotsBody" style="display:none">${pastSlots}</div>`;
-    }
-
-    document.getElementById('mgrSlotBreakdown').innerHTML = breakdownHtml ||
-      '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
+    document.getElementById('mgrDayContainer').innerHTML = tableHtml;
   }
 
   function togglePastDaySummary() {
     const b = document.getElementById('pastDaySummaryBody');
     const i = document.getElementById('pastDaySummaryIcon');
-    const open = b.style.display === 'none';
-    b.style.display = open ? 'block' : 'none';
-    i.textContent = open ? '▼' : '▶';
-  }
-
-  function togglePastSlots() {
-    const b = document.getElementById('pastSlotsBody');
-    const i = document.getElementById('pastSlotsIcon');
+    if (!b || !i) return;
     const open = b.style.display === 'none';
     b.style.display = open ? 'block' : 'none';
     i.textContent = open ? '▼' : '▶';
