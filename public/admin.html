@@ -497,17 +497,46 @@
     .mgr-kpi-card.green  .kpi-num { color: #2e7d32; }
 
     /* ── Day summary split ── */
-    .mgr-period-label {
-      font-size: 0.78rem;
-      font-weight: bold;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 8px 12px 4px;
-      background: #f9f9f9;
+    .mgr-day-table tr.past-row td { color: #aaa; }
+    .mgr-day-table tr.past-row td strong { color: #aaa; font-weight: normal; }
+    .mgr-day-table tr.past-row .status-badge { opacity: 0.65; }
+    .mgr-day-table tr.past-row .mgr-bar-fill { opacity: 0.5; }
+
+    /* כפתור "תאריכים שחלפו" */
+    .mgr-period-toggle {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 0.8rem; font-weight: bold; color: #999;
+      cursor: pointer; user-select: none;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: #f5f5f5;
+      border: 1.5px solid #e8e8e8;
+      margin-bottom: 6px;
+      transition: background 0.15s;
     }
-    .mgr-day-table tr.past-row td { color: #999; }
-    .mgr-day-table tr.past-row .status-badge { opacity: 0.75; }
+    .mgr-period-toggle:hover { background: #eeeeee; }
+    .mgr-period-count {
+      margin-right: auto;
+      background: #e0e0e0; color: #777;
+      border-radius: 10px; padding: 1px 8px;
+      font-size: 0.72rem;
+    }
+
+    /* טבלת עבר — רקע אפרפר עדין */
+    .past-table { opacity: 0.82; }
+    .past-table tbody tr:hover td { background: #f5f5f5; }
+
+    /* מפריד ויזואלי */
+    .mgr-period-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 14px 0 10px;
+      font-size: 0.78rem; font-weight: bold; color: #1565c0;
+    }
+    .mgr-period-divider::before, .mgr-period-divider::after {
+      content: ''; flex: 1;
+      height: 2px; background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+      border-radius: 2px;
+    }
 
     /* ── Compact slot breakdown ── */
     .slot-breakdown-day { margin-bottom: 16px; }
@@ -1050,8 +1079,11 @@
       if (!dayCap) dayCap = getSlotCount(date) * 30;
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
-      const isToday = date === todayStr;
-      const isPast  = date < todayStr;
+      // יום נחשב "חלף" אם: לפני היום, או היום לאחר 18:00
+      const dayEndTime = new Date(date + 'T18:00:00');
+      const isPast  = new Date() >= dayEndTime;
+      const isToday = date === todayStr && !isPast;
+
       return `
         <tr class="${isToday ? 'today-row' : isPast ? 'past-row' : ''}">
           <td>${hebrewDay(date)}${isToday ? ' <span style="font-size:0.68rem;background:#1565c0;color:white;border-radius:10px;padding:1px 6px">היום</span>' : ''}</td>
@@ -1068,29 +1100,44 @@
         </tr>`;
     }
 
-    const futureDates = allDates.filter(d => d >= todayStr);
-    const pastDates   = allDates.filter(d => d <  todayStr);
+    // יום נחשב עבר אם תם לפני עכשיו (18:00)
+    const isDayPast = d => new Date() >= new Date(d + 'T18:00:00');
 
-    const futureRows = futureDates.map(buildDayRow).join('');
+    const pastDates   = allDates.filter(d => isDayPast(d));
+    const futureDates = allDates.filter(d => !isDayPast(d));
+
     const pastRows   = pastDates.map(buildDayRow).join('');
+    const futureRows = futureDates.map(buildDayRow).join('');
 
     const thead = `<thead><tr><th>יום</th><th>תאריך</th><th>נרשמו</th><th>קיבולת</th><th>מילוי</th><th>סטטוס</th></tr></thead>`;
 
     let tableHtml = '';
-    if (futureDates.length) {
-      tableHtml += `
-        <div style="font-size:0.78rem;font-weight:bold;color:#1565c0;margin-bottom:6px;margin-top:4px">📅 תאריכים קרובים</div>
-        <table class="mgr-day-table" style="margin-bottom:18px">${thead}<tbody>${futureRows}</tbody></table>`;
-    }
+
+    // ── תאריכים שחלפו — מקופלים, לפני העתידיים ──
     if (pastDates.length) {
       tableHtml += `
-        <div style="font-size:0.78rem;font-weight:bold;color:#999;margin-bottom:6px;cursor:pointer;user-select:none" onclick="togglePastDaySummary()">
-          <span id="pastDaySummaryIcon">▶</span> תאריכים שחלפו (${pastDates.length})
+        <div class="mgr-period-toggle" onclick="togglePastDaySummary()">
+          <span id="pastDaySummaryIcon">▶</span>
+          <span>תאריכים שחלפו</span>
+          <span class="mgr-period-count">${pastDates.length}</span>
         </div>
         <div id="pastDaySummaryBody" style="display:none">
-          <table class="mgr-day-table">${thead}<tbody>${pastRows}</tbody></table>
+          <table class="mgr-day-table past-table">${thead}<tbody>${pastRows}</tbody></table>
         </div>`;
     }
+
+    // ── מפריד ויזואלי ──
+    if (pastDates.length && futureDates.length) {
+      tableHtml += `<div class="mgr-period-divider"><span>📅 תאריכים קרובים</span></div>`;
+    } else if (futureDates.length) {
+      tableHtml += `<div style="font-size:0.78rem;font-weight:bold;color:#1565c0;margin-bottom:8px">📅 תאריכים קרובים</div>`;
+    }
+
+    // ── תאריכים עתידיים ──
+    if (futureDates.length) {
+      tableHtml += `<table class="mgr-day-table">${thead}<tbody>${futureRows}</tbody></table>`;
+    }
+
     if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
 
     document.getElementById('mgrDayContainer').innerHTML = tableHtml;
