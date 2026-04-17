@@ -9,8 +9,9 @@ const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
 const START_DATE = '2026-04-12';
-const END_DATE   = '2026-04-17';
+const END_DATE   = '2026-04-24';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
+const CLOSED_DATES = ['2026-04-21', '2026-04-22']; // יום הזיכרון + יום העצמאות
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -111,6 +112,7 @@ async function getAllData() {
 
 // ===== עזר: תאריכים וחריצים =====
 function getSlotsForDate(dateStr) {
+  if (CLOSED_DATES.includes(dateStr)) return [];
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
 
