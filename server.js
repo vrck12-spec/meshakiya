@@ -11,7 +11,7 @@ const MAX_PER_SLOT = 30;
 const START_DATE = '2026-04-26';
 const END_DATE   = '2026-05-01';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
-const CLOSED_DATES = []; // אין סגירות השבוע
+const CLOSED_DATES = ['2026-05-01']; // יום שישי 1.5 — סגור
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
