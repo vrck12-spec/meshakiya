@@ -491,7 +491,7 @@
                 onclick="selectSlot(event, '${day.date}', '${slot.id}')"
                 ${slot.full ? 'disabled' : ''}
               >
-                <div class="time">${slot.display} ${slot.label}</div>
+                <div class="time">${slot.label}</div>
                 <div class="spots">${slot.full ? 'נסגר — מלא' : `${slot.available} מקומות פנויים`}</div>
               </button>
             `).join('')}
