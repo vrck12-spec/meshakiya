@@ -1171,6 +1171,12 @@
     const el = document.getElementById('managerScreen');
     const today = new Date().toLocaleDateString('he-IL').replace(/\//g, '-');
 
+    // תיקון רווחים בין מילים בעברית בעת ייצוא PDF
+    const fixStyle = document.createElement('style');
+    fixStyle.id = 'pdf-fix-style';
+    fixStyle.textContent = '* { word-spacing: 0.12em !important; }';
+    document.head.appendChild(fixStyle);
+
     await html2pdf().set({
       margin:      [10, 10, 10, 10],
       filename:    `דשבורד_משחקיה_${today}.pdf`,
@@ -1179,6 +1185,10 @@
       jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:   { mode: ['avoid-all', 'css'] }
     }).from(el).save();
+
+    // הסר את תיקון הסגנון
+    const s = document.getElementById('pdf-fix-style');
+    if (s) s.remove();
 
     btn.textContent = '🖨️ PDF';
     btn.disabled = false;
