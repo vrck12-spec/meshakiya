@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-04-18';
-const END_DATE   = '2026-04-24';
+const START_DATE = '2026-04-26';
+const END_DATE   = '2026-05-01';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4, 5]; // א׳–ו׳ (כולם פעילים)
-const CLOSED_DATES = ['2026-04-19', '2026-04-21', '2026-04-22']; // א׳ 19.4 + יום הזיכרון + יום העצמאות
+const CLOSED_DATES = []; // אין סגירות השבוע
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -120,15 +120,15 @@ function getSlotsForDate(dateStr) {
     { id: 'morning1', label: '09:00–11:00', display: 'בוקר א׳' },
     { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
   ];
-  const afternoonSlots = [
-    { id: 'afternoon1', label: '15:00–16:30', display: 'אחה"צ א׳' },
-    { id: 'afternoon2', label: '16:30–18:00', display: 'אחה"צ ב׳' },
+  const eveningSlots = [
+    { id: 'evening1', label: '16:00–18:00', display: 'אחה"צ א׳' },
+    { id: 'evening2', label: '18:00–20:00', display: 'אחה"צ ב׳' },
   ];
 
   // ו׳ (5): בוקר בלבד
   if (day === 5) return morningSlots;
-  // א׳–ה׳ (0–4): בוקר + אחה"צ
-  return [...morningSlots, ...afternoonSlots];
+  // א׳–ה׳ (0–4): אחה"צ + ערב
+  return eveningSlots;
 }
 
 function countPeople(regs) {
