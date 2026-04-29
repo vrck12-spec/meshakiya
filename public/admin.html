@@ -822,9 +822,14 @@
 
     const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
 
+    function getSlotsForDate(dateStr) {
+      const day = new Date(dateStr + 'T12:00:00').getDay();
+      return day === 5 ? ['morning1','morning2'] : ['evening1','evening2'];
+    }
+
     document.getElementById('daysContainer').innerHTML = dates.map(date => {
       const dayData = allData[date] || {};
-      const slots = Object.keys(dayData).sort((a,b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b));
+      const slots = getSlotsForDate(date);
       let dayTotal = 0;
       slots.forEach(s => { dayTotal += countPeople(dayData[s] || []); });
 
@@ -906,8 +911,8 @@
 
     function buildDayCard(date) {
       const dayData = allData[date] || {};
-      const slots = SLOT_ORDER.filter(s => dayData[s] !== undefined);
-      if (!slots.length) return '';
+      const day = new Date(date + 'T12:00:00').getDay();
+      const slots = day === 5 ? ['morning1','morning2'] : ['evening1','evening2'];
       const slotRows = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
