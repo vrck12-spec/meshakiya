@@ -655,16 +655,16 @@
 
   function slotLabel(slotId) {
     const labels = {
-      morning1:   '☀️ בוקר א׳ 09:00–11:00',
-      morning2:   '☀️ בוקר ב׳ 11:00–13:00',
-      afternoon1: '🌤️ אחה"צ א׳ 15:00–16:30',
-      afternoon2: '🌤️ אחה"צ ב׳ 16:30–18:00',
+      morning1: '☀️ בוקר א׳ 09:00–11:00',
+      morning2: '☀️ בוקר ב׳ 11:00–13:00',
+      evening1: '🌤️ אחה"צ א׳ 16:00–18:00',
+      evening2: '🌙 ערב ב׳ 18:00–20:00',
     };
     return labels[slotId] || slotId;
   }
 
   function slotShort(slotId) {
-    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', afternoon1:'אחה"צ א׳', afternoon2:'אחה"צ ב׳' };
+    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', evening1:'אחה"צ א׳', evening2:'ערב ב׳' };
     return m[slotId] || slotId;
   }
 
@@ -693,7 +693,7 @@
     return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
   }
 
-  const SLOT_END = { morning1:'11:00', morning2:'13:00', afternoon1:'16:30', afternoon2:'18:00' };
+  const SLOT_END = { morning1:'11:00', morning2:'13:00', evening1:'18:00', evening2:'20:00' };
   function isSlotPassed(dateStr, slotId) {
     const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
     const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
@@ -756,7 +756,7 @@
 
   // ── ADMIN RENDER ──────────────────────────────────────────
   function render() {
-    const allDates = Object.keys(allData).sort();
+    const allDates = [...new Set([...Object.keys(allData), ...allEventDates])].sort();
     const dates = getVisibleDates(allDates);
 
     let totalPeople = 0, totalChildren = 0, totalFamilies = 0;
@@ -820,7 +820,7 @@
       return;
     }
 
-    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
 
     document.getElementById('daysContainer').innerHTML = dates.map(date => {
       const dayData = allData[date] || {};
@@ -896,7 +896,7 @@
 
   // ── Capacity Map ──────────────────────────────────────────
   function renderCapacityMap(dates) {
-    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
     const todayStr = new Date().toISOString().split('T')[0];
 
     if (!dates.length) {
@@ -971,7 +971,7 @@
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayStr = today.toISOString().split('T')[0];
-    const SLOT_ORDER = ['morning1','morning2','afternoon1','afternoon2'];
+    const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
 
     // ── totals (רק מרישומים קיימים) ──
     let totalPeople = 0, totalChildren = 0, totalFamilies = 0, totalCapacity = 0;
@@ -1025,7 +1025,7 @@
     // מחשב מספר חלונות זמן פעילים ביום (לפי הגיון השרת: ו׳=2, שאר=4)
     function getSlotCount(dateStr) {
       const day = new Date(dateStr + 'T12:00:00').getDay();
-      return day === 5 ? 2 : 4; // שישי = 2 חלונות, שאר = 4
+      return 2; // תמיד 2 חלונות (בוקר לשישי, ערב לשאר)
     }
 
     function buildDayRow(date) {
@@ -1060,7 +1060,7 @@
     }
 
     // יום נחשב עבר אם תם לפני עכשיו (18:00)
-    const isDayPast = d => new Date() >= new Date(d + 'T18:00:00');
+    const isDayPast = d => new Date() >= new Date(d + 'T20:00:00');
 
     const pastDates   = allDates.filter(d => isDayPast(d));
     const futureDates = allDates.filter(d => !isDayPast(d));
@@ -1136,7 +1136,7 @@
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
             date, hebrewDay(date),
-            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',afternoon1:'אחה"צ א׳ 15:00-16:30',afternoon2:'אחה"צ ב׳ 16:30-18:00'}[slotId]||slotId,
+            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'אחה"צ א׳ 16:00-18:00',evening2:'ערב ב׳ 18:00-20:00'}[slotId]||slotId,
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);

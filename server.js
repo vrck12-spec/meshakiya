@@ -212,7 +212,7 @@ app.get('/api/dates', async (req, res) => {
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
-      if (dateStr <= todayStr) continue; // דלג על תאריכי עבר (כולל היום)
+      if (dateStr < todayStr) continue; // דלג על תאריכי עבר (לא כולל היום)
       const slots = getSlotsForDate(dateStr);
       if (!slots.length) continue;
 
