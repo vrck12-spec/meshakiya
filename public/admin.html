@@ -1035,16 +1035,14 @@
 
     function buildDayRow(date) {
       const dayData = allData[date] || {};
-      let dayPeople = 0, dayCap = 0;
-      SLOT_ORDER.forEach(s => {
-        if (dayData[s]) { dayPeople += countPeople(dayData[s]); dayCap += 30; }
-      });
-      // אם אין רישומים — חשב קיבולת לפי מספר חלונות הזמן ביום
-      if (!dayCap) dayCap = getSlotCount(date) * 30;
+      const daySlots = new Date(date + 'T12:00:00').getDay() === 5
+        ? ['morning1','morning2'] : ['evening1','evening2'];
+      let dayPeople = 0;
+      daySlots.forEach(s => { dayPeople += countPeople(dayData[s] || []); });
+      const dayCap = daySlots.length * 30;
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
-      // יום נחשב "חלף" אם: לפני היום, או היום לאחר 18:00
-      const dayEndTime = new Date(date + 'T18:00:00');
+      const dayEndTime = new Date(date + 'T20:00:00');
       const isPast  = new Date() >= dayEndTime;
       const isToday = date === todayStr && !isPast;
 
