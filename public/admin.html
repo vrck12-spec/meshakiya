@@ -640,6 +640,15 @@
     <div id="mgrDayContainer"></div>
   </div>
 
+  <!-- Occupancy chart -->
+  <div class="mgr-section" id="chartSection" style="display:none">
+    <h3>📈 תפוסה לפי יום</h3>
+    <div style="position:relative;height:260px">
+      <canvas id="occupancyChart"></canvas>
+      <img id="occupancyChartImg" style="display:none;width:100%;height:260px;object-fit:contain" />
+    </div>
+  </div>
+
   <!-- Print note -->
   <div style="text-align:center;color:#bbb;font-size:0.78rem;margin-top:10px;margin-bottom:20px">
     עודכן: <span id="mgrLastUpdate"></span>
@@ -1109,6 +1118,8 @@
     if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
 
     document.getElementById('mgrDayContainer').innerHTML = tableHtml;
+
+    renderChart(pastDates);
   }
 
   function togglePastDaySummary() {
@@ -1174,6 +1185,81 @@
   function exportPDF() {
     window.print();
   }
+
+  // ── occupancy chart ───────────────────────────────────────
+  let occupancyChartInstance = null;
+
+  async function renderChart(pastDates) {
+    const section = document.getElementById('chartSection');
+    if (!pastDates.length) { section.style.display = 'none'; return; }
+
+    if (!window.Chart) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    const labels = pastDates.map(d => {
+      const dt = new Date(d + 'T12:00:00');
+      return dt.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+    });
+
+    const data = pastDates.map(date => {
+      const dayData = allData[date] || {};
+      let people = 0, cap = 0;
+      Object.values(dayData).forEach(regs => { people += countPeople(regs); cap += 30; });
+      return cap ? Math.round((people / cap) * 100) : 0;
+    });
+
+    section.style.display = 'block';
+    const ctx = document.getElementById('occupancyChart').getContext('2d');
+    if (occupancyChartInstance) occupancyChartInstance.destroy();
+    occupancyChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'תפוסה %',
+          data,
+          borderColor: '#1565c0',
+          backgroundColor: 'rgba(21,101,192,0.08)',
+          pointBackgroundColor: data.map(v => v >= 100 ? '#c62828' : v >= 80 ? '#fb8c00' : '#1565c0'),
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
+          x: { ticks: { font: { size: 11 } } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // ── canvas → img before print, restore after ─────────────
+  window.addEventListener('beforeprint', () => {
+    const canvas = document.getElementById('occupancyChart');
+    const img    = document.getElementById('occupancyChartImg');
+    if (!canvas || canvas.closest('#chartSection').style.display === 'none') return;
+    img.src = canvas.toDataURL('image/png');
+    img.style.display = 'block';
+    canvas.style.display = 'none';
+  });
+  window.addEventListener('afterprint', () => {
+    const canvas = document.getElementById('occupancyChart');
+    const img    = document.getElementById('occupancyChartImg');
+    if (!canvas) return;
+    img.style.display = 'none';
+    canvas.style.display = 'block';
+  });
 
   // Auto-refresh every 60s
   setInterval(() => {
