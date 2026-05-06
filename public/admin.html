@@ -912,7 +912,8 @@
     function buildDayCard(date) {
       const dayData = allData[date] || {};
       const day = new Date(date + 'T12:00:00').getDay();
-      const slots = day === 5 ? ['morning1','morning2'] : ['evening1','evening2'];
+      const expectedSlots = day === 5 ? ['morning1','morning2'] : ['evening1','evening2'];
+      const slots = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
       const slotRows = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
@@ -1037,9 +1038,11 @@
       const dayData = allData[date] || {};
       const daySlots = new Date(date + 'T12:00:00').getDay() === 5
         ? ['morning1','morning2'] : ['evening1','evening2'];
+      // sum ALL slots present — handles legacy data stored under different IDs
+      const allSlotKeys = [...new Set([...daySlots, ...Object.keys(dayData)])];
       let dayPeople = 0;
-      daySlots.forEach(s => { dayPeople += countPeople(dayData[s] || []); });
-      const dayCap = daySlots.length * 30;
+      allSlotKeys.forEach(s => { dayPeople += countPeople(dayData[s] || []); });
+      const dayCap = Math.max(daySlots.length, Object.keys(dayData).length) * 30;
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
       const dayEndTime = new Date(date + 'T20:00:00');
