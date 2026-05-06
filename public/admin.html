@@ -1209,8 +1209,12 @@
 
     const data = pastDates.map(date => {
       const dayData = allData[date] || {};
-      let people = 0, cap = 0;
-      Object.values(dayData).forEach(regs => { people += countPeople(regs); cap += 30; });
+      const expectedSlots = new Date(date + 'T12:00:00').getDay() === 5
+        ? ['morning1','morning2'] : ['evening1','evening2'];
+      const allSlotKeys = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
+      let people = 0;
+      allSlotKeys.forEach(s => { people += countPeople(dayData[s] || []); });
+      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * 30;
       return cap ? Math.round((people / cap) * 100) : 0;
     });
 
