@@ -550,6 +550,19 @@
       .reg-table th, .reg-table td { padding: 6px 7px; }
       .capmap-grid { grid-template-columns: repeat(2, 1fr); }
     }
+  @media print {
+    body { background: white !important; }
+    #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnPdf { display: none !important; }
+    #managerScreen {
+      display: block !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .mgr-hero { box-shadow: none !important; border: 1px solid #ddd; }
+    .mgr-kpi-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    .mgr-day-table { page-break-inside: auto; }
+    .mgr-day-table tr { page-break-inside: avoid; }
+  }
   </style>
 </head>
 <body>
@@ -1158,46 +1171,8 @@
   }
 
   // ── export PDF ───────────────────────────────────────────
-  async function exportPDF() {
-    const btn = document.getElementById('btnPdf');
-    btn.textContent = '⏳ מייצר...';
-    btn.disabled = true;
-
-    // טוען את הספריה רק בפעם הראשונה
-    if (!window.html2pdf) {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      });
-    }
-
-    const el = document.getElementById('managerScreen');
-    const today = new Date().toLocaleDateString('he-IL').replace(/\//g, '-');
-
-    // תיקון רווחים בין מילים בעברית בעת ייצוא PDF
-    const fixStyle = document.createElement('style');
-    fixStyle.id = 'pdf-fix-style';
-    fixStyle.textContent = '* { word-spacing: 0.12em !important; }';
-    document.head.appendChild(fixStyle);
-
-    await html2pdf().set({
-      margin:      [10, 10, 10, 10],
-      filename:    `דשבורד_משחקיה_${today}.pdf`,
-      image:       { type: 'jpeg', quality: 0.97 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:   { mode: ['avoid-all', 'css'] }
-    }).from(el).save();
-
-    // הסר את תיקון הסגנון
-    const s = document.getElementById('pdf-fix-style');
-    if (s) s.remove();
-
-    btn.textContent = '🖨️ PDF';
-    btn.disabled = false;
+  function exportPDF() {
+    window.print();
   }
 
   // Auto-refresh every 60s
