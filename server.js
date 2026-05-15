@@ -8,8 +8,8 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-05-10';
-const END_DATE   = '2026-05-14';
+const START_DATE = '2026-05-17';
+const END_DATE   = '2026-05-21';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳–ה׳
 const CLOSED_DATES = [];
 
