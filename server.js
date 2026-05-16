@@ -11,7 +11,7 @@ const MAX_PER_SLOT = 30;
 const START_DATE = '2026-05-17';
 const END_DATE   = '2026-05-21';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳–ה׳
-const CLOSED_DATES = [];
+const CLOSED_DATES = ['2026-05-21'];
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
