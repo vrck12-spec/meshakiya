@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-05-17';
-const END_DATE   = '2026-05-21';
+const START_DATE = '2025-05-24';
+const END_DATE   = '2025-05-28';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳–ה׳
-const CLOSED_DATES = ['2026-05-21'];
+const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -121,8 +121,8 @@ function getSlotsForDate(dateStr) {
     { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
   ];
   const eveningSlots = [
-    { id: 'evening1', label: '16:00–17:30', display: 'אחה"צ א׳' },
-    { id: 'evening2', label: '17:30–19:00', display: 'אחה"צ ב׳' },
+    { id: 'evening1', label: '16:00–17:30', display: 'סבב א׳' },
+    { id: 'evening2', label: '17:30–19:00', display: 'סבב ב׳' },
   ];
 
   return eveningSlots;
