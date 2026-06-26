@@ -10,7 +10,7 @@ const MAX_PER_SLOT = 30;
 // ===== הגדרת תאריכי פעילות =====
 const START_DATE = '2026-06-26';
 const END_DATE   = '2026-07-02';
-const ACTIVE_DAYS = [0, 2, 3]; // א׳, ג׳, ד׳
+const ACTIVE_DAYS = [0, 2, 3, 4]; // א׳, ג׳, ד׳, ה׳
 const CLOSED_DATES = ['2026-06-30']; // יום ב׳ — סגור
 
 // ===== הגדרת שולח מייל =====
