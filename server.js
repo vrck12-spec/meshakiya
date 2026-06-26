@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-06-21';
-const END_DATE   = '2026-06-25';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳–ה׳
-const CLOSED_DATES = [];
+const START_DATE = '2026-06-26';
+const END_DATE   = '2026-07-02';
+const ACTIVE_DAYS = [0, 2, 3]; // א׳, ג׳, ד׳
+const CLOSED_DATES = ['2026-06-30']; // יום ב׳ — סגור
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -116,14 +116,15 @@ function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
 
-  const morningSlots = [
-    { id: 'morning1', label: '09:00–11:00', display: 'בוקר א׳' },
-    { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
-  ];
   const eveningSlots = [
     { id: 'evening1', label: '16:00–17:30', display: 'סבב א׳' },
     { id: 'evening2', label: '17:30–19:00', display: 'סבב ב׳' },
   ];
+
+  // יום ד׳ — סשן אחד בלבד
+  if (day === 3) {
+    return [{ id: 'afternoon', label: '16:00–18:00', display: 'סשן יחיד' }];
+  }
 
   return eveningSlots;
 }
@@ -197,6 +198,7 @@ async function sendConfirmationEmail(email, data) {
 // ===== Middleware =====
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/countdown', express.static(path.join(__dirname, '..', 'countdown')));
 
 // ===== API =====
 app.get('/api/dates', async (req, res) => {
