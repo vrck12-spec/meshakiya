@@ -10,8 +10,8 @@ const MAX_PER_SLOT = 30;
 // ===== הגדרת תאריכי פעילות =====
 const START_DATE = '2026-06-28';
 const END_DATE   = '2026-07-02';
-const ACTIVE_DAYS = [0, 2, 3, 4]; // א׳, ג׳, ד׳, ה׳
-const CLOSED_DATES = ['2026-06-29']; // יום ב׳ (שני 29/6) — סגור
+const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳, ב׳, ג׳, ד׳, ה׳
+const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
