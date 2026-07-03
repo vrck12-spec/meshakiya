@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-06-28';
-const END_DATE   = '2026-07-02';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳, ב׳, ג׳, ד׳, ה׳
+const START_DATE = '2026-07-05';
+const END_DATE   = '2026-07-09';
+const ACTIVE_DAYS = [0, 2, 3, 4]; // א׳, ג׳, ד׳, ה׳ (ב׳ סגור)
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
