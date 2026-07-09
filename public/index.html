@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>רישום למשחקיה העירונית — 05.07–09.07</title>
+  <title>רישום למשחקיה העירונית — 12.07–16.07</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -177,6 +177,11 @@
     .slot-btn.selected { border-color: #1565c0; background: #1565c0; color: white; }
     .slot-btn.full { background: #fce4ec; color: #c62828; border-color: #ef9a9a; cursor: not-allowed; }
 
+    .slot-btn.reserve { border-color: #8d6e37; background: #fdf6e8; }
+    .slot-btn.reserve:hover:not(.full) { border-color: #8d6e37; background: #f7ecd0; }
+    .slot-btn.reserve.selected { border-color: #8d6e37; background: #8d6e37; color: white; }
+    .slot-btn.reserve.full { background: #fce4ec; color: #c62828; border-color: #ef9a9a; }
+
     .slot-btn .time { font-weight: bold; font-size: 0.9rem; }
     .slot-btn .spots {
       font-size: 0.75rem;
@@ -184,6 +189,14 @@
       opacity: 0.8;
     }
 
+    .slot-btn .reserve-tag {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #8d6e37;
+      margin-bottom: 2px;
+    }
+
+    .slot-btn.selected .reserve-tag { color: rgba(255,255,255,0.9); }
     .slot-btn.selected .spots { opacity: 0.9; }
 
     /* ===== Form ===== */
@@ -356,20 +369,28 @@
     </div>
     <span class="emoji">🎠</span>
     <h1>משחקיה עירונית 8</h1>
-    <div class="subtitle">05.07–09.07</div>
+    <div class="subtitle">12.07–16.07</div>
   </div>
 
   <!-- Info -->
   <div class="info-box">
-    <h2>🕐 שעות פעילות — 05.07–09.07</h2>
+    <h2>🕐 שעות פעילות — 12.07–16.07</h2>
     <div class="hours-grid">
       <div class="hour-card">
         <strong>א׳ + ג׳ + ה׳ — שני סבבים</strong>
         16:00–17:30 | 17:30–19:00
       </div>
       <div class="hour-card">
-        <strong>ד׳</strong>
+        <strong>ב׳ — מילואים בלבד, שני סבבים</strong>
+        16:00–17:30 | 17:30–19:00
+      </div>
+      <div class="hour-card">
+        <strong>ד׳ — לכולם</strong>
         16:00–18:00
+      </div>
+      <div class="hour-card">
+        <strong>ד׳ — מילואים בלבד</strong>
+        18:00–20:30
       </div>
     </div>
 
@@ -380,6 +401,7 @@
       <li><span class="icon">👨‍👧</span> הכניסה בליווי מבוגר בלבד</li>
       <li><span class="icon">🧒</span> המתחם מתאים לילדים מגיל לידה עד גיל 14</li>
       <li><span class="icon">📝</span> הכניסה ברישום מראש בקפסולות של עד 30 אנשים (כולל הורים)</li>
+      <li><span class="icon">🎖️</span> חלונות המסומנים "מילואים בלבד" מיועדים למשפחות מילואים בלבד</li>
     </ul>
   </div>
 
@@ -486,11 +508,12 @@
           <div class="slots-row">
             ${day.slots.map(slot => `
               <button
-                class="slot-btn ${slot.full ? 'full' : ''}"
+                class="slot-btn ${slot.reserveOnly ? 'reserve' : ''} ${slot.full ? 'full' : ''}"
                 id="slot-${day.date}-${slot.id}"
                 onclick="selectSlot(event, '${day.date}', '${slot.id}')"
                 ${slot.full ? 'disabled' : ''}
               >
+                ${slot.reserveOnly ? '<div class="reserve-tag">🎖️ מילואים בלבד</div>' : ''}
                 <div class="time">${slot.label}</div>
                 <div class="spots">${slot.full ? 'נסגר — מלא' : `${slot.available} מקומות פנויים`}</div>
               </button>
