@@ -61,6 +61,9 @@
     }
     .export-btn:hover { background: #e3f2fd; }
 
+    .export-btn.reserve-export { background: #fdf6e8; color: #6d5429; }
+    .export-btn.reserve-export:hover { background: #f7ecd0; }
+
     /* ===== Login ===== */
     #loginScreen {
       display: flex;
@@ -552,7 +555,7 @@
     }
   @media print {
     body { background: white !important; }
-    #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnPdf { display: none !important; }
+    #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnCsvReserve, #btnPdf { display: none !important; }
     #managerScreen { display: block !important; padding: 0 !important; margin: 0 !important; }
 
     /* headers — black text on white */
@@ -614,6 +617,7 @@
     <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
     <button class="topbar-btn" id="btnBrief" onclick="switchView('brief')">📈 תצוגה מקוצרת</button>
     <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
+    <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()">🎖️ ייצוא מילואים</button>
     <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
   </div>
 </div>
@@ -759,6 +763,14 @@
     if (day === 5) return ['morning1','morning2'];
     if (day === 3) return ['afternoon','reserve'];
     return ['evening1','evening2'];
+  }
+
+  // חלונות "מילואים בלבד": יום ב׳ (שני הסבבים) ויום ד׳ (חלון reserve בלבד)
+  function isReserveSlot(dateStr, slotId) {
+    const day = new Date(dateStr + 'T12:00:00').getDay();
+    if (day === 1) return true;
+    if (day === 3) return slotId === 'reserve';
+    return false;
   }
 
   function capClass(pct) {
@@ -1252,6 +1264,33 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'רישומים_משחקיה.csv';
+    a.click();
+  }
+
+  // ── export CSV — נרשמי מילואים בלבד (לרכזת המילואים ברשות) ──
+  function exportReserveCSV() {
+    const rows = [['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום']];
+    Object.keys(allData).sort().forEach(date => {
+      Object.keys(allData[date]).forEach(slotId => {
+        if (!isReserveSlot(date, slotId)) return;
+        (allData[date][slotId] || []).forEach(r => {
+          const names = (r.children||[]).map(c=>c.name).join(' | ');
+          const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
+          rows.push([
+            date, hebrewDay(date),
+            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-17:30',evening2:'סבב ב׳ 17:30-19:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 18:00-20:30'}[slotId]||slotId,
+            r.parentName, r.phone, names, ages, (r.children||[]).length,
+            new Date(r.registeredAt).toLocaleString('he-IL')
+          ]);
+        });
+      });
+    });
+    if (rows.length === 1) { alert('אין נרשמי מילואים לייצוא'); return; }
+    const bom = '﻿';
+    const csv = bom + rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'רשימת_מילואים_משחקיה.csv';
     a.click();
   }
 
