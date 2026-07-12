@@ -635,7 +635,7 @@
     <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
     <button class="topbar-btn" id="btnBrief" onclick="switchView('brief')">📈 תצוגה מקוצרת</button>
     <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
-    <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()">🎖️ ייצוא מילואים</button>
+    <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()" title="קובץ Excel של נרשמי המילואים לשבוע הנוכחי">🎖️ ייצוא מילואים לאקסל</button>
     <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
   </div>
 </div>
@@ -757,6 +757,11 @@
 
   function formatDate(dateStr) {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('he-IL', { day:'numeric', month:'long' });
+  }
+
+  function hebrewDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
   }
 
   function slotLabel(slotId) {
@@ -1287,17 +1292,32 @@
     a.click();
   }
 
-  // ── export CSV — נרשמי מילואים בלבד (לרכזת המילואים ברשות) ──
-  function exportReserveCSV() {
-    const rows = [['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום']];
+  // ── קובץ אקסל אמיתי — נרשמי מילואים בלבד לשבוע הנוכחי (לרכזת המילואים ברשות) ──
+  function ensureXlsxJs() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function exportReserveCSV() {
+    // רק תאריכי השבוע הפעיל הנוכחי (allEventDates מגיע מהשרת לפי START_DATE–END_DATE)
+    const currentWeekDates = new Set(allEventDates);
+
+    const header = ['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום'];
+    const rows = [header];
     Object.keys(allData).sort().forEach(date => {
+      if (!currentWeekDates.has(date)) return;
       Object.keys(allData[date]).forEach(slotId => {
         if (!isReserveSlot(date, slotId)) return;
         (allData[date][slotId] || []).forEach(r => {
-          const names = (r.children||[]).map(c=>c.name).join(' | ');
-          const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
+          const names = (r.children||[]).map(c=>c.name).join(', ');
+          const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
           rows.push([
-            date, hebrewDay(date),
+            hebrewDate(date), hebrewDay(date),
             {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-17:30',evening2:'סבב ב׳ 17:30-19:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 18:00-20:30'}[slotId]||slotId,
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
@@ -1305,13 +1325,32 @@
         });
       });
     });
-    if (rows.length === 1) { alert('אין נרשמי מילואים לייצוא'); return; }
-    const bom = '﻿';
-    const csv = bom + rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    a.download = 'רשימת_מילואים_משחקיה.csv';
-    a.click();
+
+    if (rows.length === 1) { alert('אין נרשמי מילואים לייצוא לשבוע הנוכחי'); return; }
+
+    await ensureXlsxJs();
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 10 }, { wch: 9 }, { wch: 20 }, { wch: 16 }, { wch: 13 },
+      { wch: 24 }, { wch: 12 }, { wch: 9 }, { wch: 17 }
+    ];
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'FDF6E8' } } };
+    }
+    ws['!autofilter'] = { ref: ws['!ref'] };
+
+    const wb = XLSX.utils.book_new();
+    wb.Workbook = { Views: [{ RTL: true }] };
+    XLSX.utils.book_append_sheet(wb, ws, 'מילואים');
+
+    const weekDates = [...currentWeekDates].sort();
+    const rangeLabel = weekDates.length
+      ? `${hebrewDate(weekDates[0])}–${hebrewDate(weekDates[weekDates.length - 1])}`.replace(/\//g, '.')
+      : 'משחקיה';
+    XLSX.writeFile(wb, `רשימת_מילואים_${rangeLabel}.xlsx`);
   }
 
   // ── export PDF ───────────────────────────────────────────
