@@ -167,6 +167,24 @@
     .slot-section { padding: 14px 18px; border-bottom: 1px solid #f0f0f0; }
     .slot-section:last-child { border-bottom: none; }
 
+    .slot-section.reserve-slot {
+      background: #fdf6e8;
+      border-right: 4px solid #8d6e37;
+    }
+    .slot-section.reserve-slot .slot-title h3 { color: #6d5429; }
+
+    .reserve-badge {
+      display: inline-block;
+      background: #8d6e37;
+      color: #fff;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
     .slot-title {
       display: flex;
       justify-content: space-between;
@@ -957,6 +975,8 @@
         const hiddenStyle = passed ? 'display:none' : '';
         const icon = passed ? '▼' : '▲';
         const passedLabel = passed ? ' <span style="font-size:0.7rem;color:#aaa;font-weight:normal">— חלף</span>' : '';
+        const isReserve = isReserveSlot(date, slotId);
+        const reserveBadge = isReserve ? '<span class="reserve-badge">🎖️ מילואים בלבד</span>' : '';
 
         const rows = regs.length
           ? regs.map((r, i) => `
@@ -972,9 +992,9 @@
           : `<tr><td colspan="7" class="empty-slot">אין רישומים</td></tr>`;
 
         return `
-          <div class="slot-section">
+          <div class="slot-section${isReserve ? ' reserve-slot' : ''}">
             <div class="slot-title" onclick="toggleSlot('${slotKey}')">
-              <h3>${slotLabel(slotId)}${passedLabel}</h3>
+              <h3>${slotLabel(slotId)}${reserveBadge}${passedLabel}</h3>
               <div style="display:flex;align-items:center;gap:10px">
                 <div class="capacity-bar-wrap">
                   <div class="capacity-bar">
