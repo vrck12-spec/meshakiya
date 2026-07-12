@@ -563,6 +563,42 @@
     }
 
 
+    /* ===== מסך הדפסה — רשימת מילואים ===== */
+    #reservePrintScreen { display: none; }
+
+    .rpt-header {
+      background: #fdf6e8;
+      border: 1px solid #e6d9b8;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .rpt-title { font-size: 1.4rem; font-weight: bold; color: #6d5429; }
+    .rpt-sub   { font-size: 1rem; color: #6d5429; margin-top: 4px; }
+    .rpt-meta  { font-size: 0.85rem; color: #8a7a4f; margin-top: 8px; }
+
+    .rpt-day { margin-bottom: 18px; }
+    .rpt-day-title {
+      font-size: 1.05rem; font-weight: bold; color: #333;
+      background: #f5f7fa; border-radius: 8px;
+      padding: 8px 14px; margin-bottom: 8px;
+    }
+    .rpt-slot { margin: 0 0 14px 0; }
+    .rpt-slot-title {
+      font-size: 0.88rem; font-weight: 600; color: #6d5429;
+      padding: 4px 4px 6px;
+      border-bottom: 2px solid #e6d9b8;
+      margin-bottom: 4px;
+    }
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    .rpt-table th {
+      background: #fdf6e8; color: #6d5429; text-align: right;
+      padding: 6px 10px; border-bottom: 2px solid #e6d9b8;
+    }
+    .rpt-table td { padding: 6px 10px; border-bottom: 1px solid #eee; color: #333; }
+    .rpt-table tr:nth-child(even) td { background: #fafafa; }
+
     @media (max-width: 600px) {
       #mainScreen, #managerScreen { padding: 10px; }
       .mgr-hero { padding: 20px 18px; }
@@ -573,7 +609,7 @@
     }
   @media print {
     body { background: white !important; }
-    #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnCsvReserve, #btnPdf { display: none !important; }
+    #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnCsvReserve, #btnPdfReserve, #btnPdf { display: none !important; }
     #managerScreen { display: block !important; padding: 0 !important; margin: 0 !important; }
 
     /* headers — black text on white */
@@ -619,6 +655,20 @@
     /* chart: hide canvas, show static img */
     #occupancyChart    { display: none !important; }
     #occupancyChartImg { display: block !important; width: 100% !important; height: auto !important; }
+
+    /* מסך הדפסת מילואים — עוקף את כל שאר כללי ההדפסה כשפעיל */
+    body.printing-reserve #loginScreen, body.printing-reserve #topbar,
+    body.printing-reserve #mainScreen, body.printing-reserve #managerScreen,
+    body.printing-reserve #briefScreen, body.printing-reserve .topbar-btn,
+    body.printing-reserve .export-btn {
+      display: none !important;
+    }
+    body.printing-reserve #reservePrintScreen {
+      display: block !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .rpt-day { page-break-inside: avoid; }
   }
   </style>
 </head>
@@ -636,6 +686,7 @@
     <button class="topbar-btn" id="btnBrief" onclick="switchView('brief')">📈 תצוגה מקוצרת</button>
     <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
     <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()" title="קובץ Excel של נרשמי המילואים לשבוע הנוכחי">🎖️ ייצוא מילואים לאקסל</button>
+    <button class="export-btn reserve-export" id="btnPdfReserve" onclick="exportReservePDF()" title="רשימה מעוצבת להדפסה/שמירה כ-PDF">🖨️ PDF מילואים</button>
     <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
   </div>
 </div>
@@ -738,6 +789,9 @@
     עודכן: <span id="briefLastUpdate"></span>
   </div>
 </div>
+
+<!-- ===================== RESERVE PRINT VIEW (מוצג רק בהדפסה) ===================== -->
+<div id="reservePrintScreen"></div>
 
 <script>
   const ADMIN_PASS = '1234';
@@ -1303,26 +1357,48 @@
     });
   }
 
-  async function exportReserveCSV() {
-    // רק תאריכי השבוע הפעיל הנוכחי (allEventDates מגיע מהשרת לפי START_DATE–END_DATE)
-    const currentWeekDates = new Set(allEventDates);
+  const RESERVE_SLOT_TIME_LABELS = {
+    morning1:'בוקר א׳ 09:00-11:00', morning2:'בוקר ב׳ 11:00-13:00',
+    evening1:'סבב א׳ 16:00-17:30', evening2:'סבב ב׳ 17:30-19:00',
+    afternoon:'סשן יחיד 16:00-18:00', reserve:'מילואים 18:00-20:30'
+  };
 
-    const header = ['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום'];
-    const rows = [header];
+  // מרכז את הסינון: רק תאריכי השבוע הפעיל הנוכחי + רק חלונות "מילואים בלבד"
+  function getReserveRegistrations() {
+    const currentWeekDates = new Set(allEventDates);
+    const groups = [];
     Object.keys(allData).sort().forEach(date => {
       if (!currentWeekDates.has(date)) return;
       Object.keys(allData[date]).forEach(slotId => {
         if (!isReserveSlot(date, slotId)) return;
-        (allData[date][slotId] || []).forEach(r => {
-          const names = (r.children||[]).map(c=>c.name).join(', ');
-          const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
-          rows.push([
-            hebrewDate(date), hebrewDay(date),
-            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-17:30',evening2:'סבב ב׳ 17:30-19:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 18:00-20:30'}[slotId]||slotId,
-            r.parentName, r.phone, names, ages, (r.children||[]).length,
-            new Date(r.registeredAt).toLocaleString('he-IL')
-          ]);
-        });
+        const regs = allData[date][slotId] || [];
+        if (regs.length) groups.push({ date, slotId, regs });
+      });
+    });
+    return { currentWeekDates, groups };
+  }
+
+  function reserveWeekRangeLabel(currentWeekDates) {
+    const weekDates = [...currentWeekDates].sort();
+    return weekDates.length
+      ? `${hebrewDate(weekDates[0])}–${hebrewDate(weekDates[weekDates.length - 1])}`
+      : '';
+  }
+
+  async function exportReserveCSV() {
+    const { currentWeekDates, groups } = getReserveRegistrations();
+
+    const header = ['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום'];
+    const rows = [header];
+    groups.forEach(({ date, slotId, regs }) => {
+      regs.forEach(r => {
+        const names = (r.children||[]).map(c=>c.name).join(', ');
+        const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
+        rows.push([
+          hebrewDate(date), hebrewDay(date), RESERVE_SLOT_TIME_LABELS[slotId] || slotId,
+          r.parentName, r.phone, names, ages, (r.children||[]).length,
+          new Date(r.registeredAt).toLocaleString('he-IL')
+        ]);
       });
     });
 
@@ -1346,11 +1422,62 @@
     wb.Workbook = { Views: [{ RTL: true }] };
     XLSX.utils.book_append_sheet(wb, ws, 'מילואים');
 
-    const weekDates = [...currentWeekDates].sort();
-    const rangeLabel = weekDates.length
-      ? `${hebrewDate(weekDates[0])}–${hebrewDate(weekDates[weekDates.length - 1])}`.replace(/\//g, '.')
-      : 'משחקיה';
+    const rangeLabel = (reserveWeekRangeLabel(currentWeekDates) || 'משחקיה').replace(/\//g, '.');
     XLSX.writeFile(wb, `רשימת_מילואים_${rangeLabel}.xlsx`);
+  }
+
+  // ── PDF מעוצב — נרשמי מילואים לשבוע הנוכחי (להדפסה/שיתוף לרכזת) ──
+  function exportReservePDF() {
+    const { currentWeekDates, groups } = getReserveRegistrations();
+    if (!groups.length) { alert('אין נרשמי מילואים לייצוא לשבוע הנוכחי'); return; }
+
+    const totalFamilies = groups.reduce((sum, g) => sum + g.regs.length, 0);
+    const totalPeople = groups.reduce((sum, g) => sum + countPeople(g.regs), 0);
+    const rangeLabel = reserveWeekRangeLabel(currentWeekDates);
+
+    // קיבוץ לפי יום
+    const byDate = {};
+    groups.forEach(g => { (byDate[g.date] = byDate[g.date] || []).push(g); });
+
+    const daysHtml = Object.keys(byDate).sort().map(date => {
+      const slotsHtml = byDate[date].map(({ slotId, regs }) => `
+        <div class="rpt-slot">
+          <div class="rpt-slot-title">${RESERVE_SLOT_TIME_LABELS[slotId] || slotId}</div>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th></tr></thead>
+            <tbody>
+              ${regs.map((r, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${r.parentName}</td>
+                  <td dir="ltr">${r.phone}</td>
+                  <td>${(r.children||[]).map(c => `${c.name}${c.age!=null?' ('+c.age+')':''}`).join(', ')}</td>
+                  <td>${1 + (r.children||[]).length}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`).join('');
+
+      return `
+        <div class="rpt-day">
+          <div class="rpt-day-title">🎖️ ${hebrewDay(date)} — ${hebrewDate(date)}</div>
+          ${slotsHtml}
+        </div>`;
+    }).join('');
+
+    document.getElementById('reservePrintScreen').innerHTML = `
+      <div class="rpt-header">
+        <div class="rpt-title">🎖️ רשימת נרשמי מילואים</div>
+        <div class="rpt-sub">משחקיה עירונית 8 — שבוע ${rangeLabel}</div>
+        <div class="rpt-meta">${totalFamilies} משפחות • ${totalPeople} אנשים · הופק ב-${new Date().toLocaleDateString('he-IL')}</div>
+      </div>
+      ${daysHtml}
+    `;
+
+    document.body.classList.add('printing-reserve');
+    const cleanup = () => document.body.classList.remove('printing-reserve');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
   }
 
   // ── export PDF ───────────────────────────────────────────
