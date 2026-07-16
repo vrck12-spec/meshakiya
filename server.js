@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-07-12';
-const END_DATE   = '2026-07-16';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳, ב׳(מילואים בלבד), ג׳, ד׳, ה׳
+const START_DATE = '2026-07-19';
+const END_DATE   = '2026-07-23';
+const ACTIVE_DAYS = [0, 1, 2, 4]; // א׳, ב׳(מילואים בלבד — סבב יחיד), ג׳, ה׳ — ד׳ סגור
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
@@ -38,9 +38,12 @@ async function initDB() {
       registered_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-  // הוספת עמודת מייל לטבלה קיימת (אם עדיין לא קיימת)
+  // הוספת עמודות לטבלה קיימת (אם עדיין לא קיימות)
   await db.query(`
     ALTER TABLE registrations ADD COLUMN IF NOT EXISTS email TEXT
+  `);
+  await db.query(`
+    ALTER TABLE registrations ADD COLUMN IF NOT EXISTS allergies TEXT
   `);
   console.log('✅ מסד נתונים PostgreSQL מחובר');
 }
@@ -58,7 +61,7 @@ function writeJSON(data) {
 async function getSlotRegistrations(date, slot) {
   if (db) {
     const res = await db.query(
-      'SELECT id, parent_name, phone, email, children, registered_at FROM registrations WHERE date=$1 AND slot=$2 ORDER BY id',
+      'SELECT id, parent_name, phone, email, children, allergies, registered_at FROM registrations WHERE date=$1 AND slot=$2 ORDER BY id',
       [date, slot]
     );
     return res.rows.map(r => ({
@@ -67,6 +70,7 @@ async function getSlotRegistrations(date, slot) {
       phone: r.phone,
       email: r.email,
       children: r.children,
+      allergies: r.allergies,
       registeredAt: r.registered_at
     }));
   }
@@ -77,8 +81,8 @@ async function getSlotRegistrations(date, slot) {
 async function addRegistration(date, slot, entry) {
   if (db) {
     await db.query(
-      'INSERT INTO registrations (id, date, slot, parent_name, phone, email, children, registered_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-      [entry.id, date, slot, entry.parentName, entry.phone, entry.email || null, JSON.stringify(entry.children), entry.registeredAt]
+      'INSERT INTO registrations (id, date, slot, parent_name, phone, email, children, allergies, registered_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [entry.id, date, slot, entry.parentName, entry.phone, entry.email || null, JSON.stringify(entry.children), entry.allergies || null, entry.registeredAt]
     );
     return;
   }
@@ -102,6 +106,7 @@ async function getAllData() {
         phone: r.phone,
         email: r.email,
         children: r.children,
+        allergies: r.allergies,
         registeredAt: r.registered_at
       });
     });
@@ -121,16 +126,10 @@ function getSlotsForDate(dateStr) {
     { id: 'evening2', label: '17:30–19:00', display: 'סבב ב׳' },
   ];
 
-  // יום ב׳ — מילואים בלבד, שני סבבים
+  // יום ב׳ — מילואים בלבד, סבב יחיד
   if (day === 1) {
-    return eveningSlots.map(s => ({ ...s, display: s.display + ' — מילואים בלבד', reserveOnly: true }));
-  }
-
-  // יום ד׳ — סשן רגיל לכולם + סבב מילואים
-  if (day === 3) {
     return [
-      { id: 'afternoon', label: '16:00–18:00', display: 'סשן יחיד' },
-      { id: 'reserve', label: '18:00–20:30', display: 'מילואים בלבד', reserveOnly: true },
+      { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
     ];
   }
 
@@ -240,7 +239,7 @@ app.get('/api/dates', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { date, slot, parentName, phone, email, children } = req.body;
+    const { date, slot, parentName, phone, email, children, allergies } = req.body;
     if (!date || !slot || !parentName || !phone || !children?.length)
       return res.status(400).json({ error: 'נא למלא את כל השדות הנדרשים' });
     if (!getSlotsForDate(date).find(s => s.id === slot))
@@ -256,7 +255,7 @@ app.post('/api/register', async (req, res) => {
     if (newPeople > remaining)
       return res.status(409).json({ error: `נותרו רק ${remaining} מקומות (כולל הורים)`, remaining });
 
-    const entry = { id: Date.now(), parentName, phone, email: email || null, children, registeredAt: new Date().toISOString() };
+    const entry = { id: Date.now(), parentName, phone, email: email || null, children, allergies: allergies || null, registeredAt: new Date().toISOString() };
     await addRegistration(date, slot, entry);
 
     const newTotal = peopleCount + newPeople;

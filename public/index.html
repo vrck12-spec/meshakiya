@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>רישום למשחקיה העירונית — 12.07–16.07</title>
+  <title>רישום למשחקיה העירונית — 19.07–23.07</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -372,28 +372,24 @@
     </div>
     <span class="emoji">🎠</span>
     <h1>משחקיה עירונית 8</h1>
-    <div class="subtitle">12.07–16.07</div>
+    <div class="subtitle">19.07–23.07</div>
   </div>
 
   <!-- Info -->
   <div class="info-box">
-    <h2>🕐 שעות פעילות — 12.07–16.07</h2>
+    <h2>🕐 שעות פעילות — 19.07–23.07</h2>
     <div class="hours-grid">
       <div class="hour-card">
         <strong>א׳ + ג׳ + ה׳ — שני סבבים</strong>
         16:00–17:30 | 17:30–19:00
       </div>
       <div class="hour-card reserve">
-        <strong>ב׳ — מילואים בלבד, שני סבבים</strong>
-        16:00–17:30 | 17:30–19:00
+        <strong>ב׳ — מילואים בלבד, סבב יחיד</strong>
+        16:00–19:00
       </div>
-      <div class="hour-card">
-        <strong>ד׳ — לכולם</strong>
-        16:00–18:00
-      </div>
-      <div class="hour-card reserve">
-        <strong>ד׳ — מילואים בלבד</strong>
-        18:00–20:30
+      <div class="hour-card" style="background:#f5f5f5;color:#888">
+        <strong>ד׳ — סגור</strong>
+        אין פעילות
       </div>
     </div>
 
@@ -438,6 +434,11 @@
       <div class="form-group">
         <label>כתובת מייל <span style="font-weight:normal;color:#aaa;font-size:0.82rem">(אופציונלי — לקבלת אישור)</span></label>
         <input type="email" id="email" placeholder="example@gmail.com" dir="ltr" />
+      </div>
+
+      <div class="form-group" id="allergyGroup" style="display:none">
+        <label>🎖️ האם יש אלרגיות? <span style="font-weight:normal;color:#aaa;font-size:0.82rem">(למשפחות מילואים)</span></label>
+        <input type="text" id="allergies" placeholder="פרטו אם יש אלרגיות, או השאירו ריק אם אין" />
       </div>
 
       <div class="form-group">
@@ -559,6 +560,11 @@
     step2.style.display = 'block';
     step2.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+    // Show allergy question only for reserve-only slots
+    const dayData = allDatesData.find(d => d.date === date);
+    const slotData = dayData?.slots.find(s => s.id === slotId);
+    document.getElementById('allergyGroup').style.display = slotData?.reserveOnly ? 'block' : 'none';
+
     // Init children if empty
     if (childCount === 0) addChild();
   }
@@ -613,6 +619,7 @@
     const parentName = document.getElementById('parentName').value.trim();
     const phone      = document.getElementById('phone').value.trim();
     const email      = document.getElementById('email').value.trim();
+    const allergies  = document.getElementById('allergies').value.trim();
     const children   = getChildren();
 
     if (!selectedDate || !selectedSlot) {
@@ -631,7 +638,7 @@
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: selectedDate, slot: selectedSlot, parentName, phone, email, children })
+        body: JSON.stringify({ date: selectedDate, slot: selectedSlot, parentName, phone, email, children, allergies })
       });
 
       const data = await res.json();
@@ -685,6 +692,8 @@
     document.getElementById('parentName').value = '';
     document.getElementById('phone').value = '';
     document.getElementById('email').value = '';
+    document.getElementById('allergies').value = '';
+    document.getElementById('allergyGroup').style.display = 'none';
     document.getElementById('childrenList').innerHTML = '';
     childCount = 0;
     selectedDate = null;

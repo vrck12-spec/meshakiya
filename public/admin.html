@@ -827,7 +827,7 @@
       evening1: '🌤️ סבב א׳ 16:00–17:30',
       evening2: '🌙 סבב ב׳ 17:30–19:00',
       afternoon: '🌆 סשן יחיד 16:00–18:00',
-      reserve: '🎖️ מילואים 18:00–20:30',
+      reserve: '🎖️ מילואים 16:00–19:00',
     };
     return labels[slotId] || slotId;
   }
@@ -840,15 +840,14 @@
   function expectedSlotsForDate(dateStr) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
     if (day === 5) return ['morning1','morning2'];
-    if (day === 3) return ['afternoon','reserve'];
+    if (day === 1) return ['reserve'];
     return ['evening1','evening2'];
   }
 
-  // חלונות "מילואים בלבד": יום ב׳ (שני הסבבים) ויום ד׳ (חלון reserve בלבד)
+  // חלונות "מילואים בלבד": יום ב׳ (סבב יחיד)
   function isReserveSlot(dateStr, slotId) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
     if (day === 1) return true;
-    if (day === 3) return slotId === 'reserve';
     return false;
   }
 
@@ -877,7 +876,7 @@
     return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
   }
 
-  const SLOT_END = { morning1:'11:00', morning2:'13:00', evening1:'17:30', evening2:'19:00', afternoon:'18:00', reserve:'20:30' };
+  const SLOT_END = { morning1:'11:00', morning2:'13:00', evening1:'17:30', evening2:'19:00', afternoon:'18:00', reserve:'19:00' };
   function isSlotPassed(dateStr, slotId) {
     const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
     const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
@@ -1039,6 +1038,7 @@
         const isReserve = isReserveSlot(date, slotId);
         const reserveBadge = isReserve ? '<span class="reserve-badge">🎖️ מילואים בלבד</span>' : '';
 
+        const allergyCol = isReserve ? `<th>אלרגיות</th>` : '';
         const rows = regs.length
           ? regs.map((r, i) => `
             <tr>
@@ -1047,10 +1047,11 @@
               <td dir="ltr">${r.phone}</td>
               <td>${(r.children||[]).map(c=>`<span class="tag">${c.name}${c.age!=null?' ('+c.age+')':''}</span>`).join('')}</td>
               <td>${1+(r.children||[]).length} אנשים</td>
+              ${isReserve ? `<td>${r.allergies || '—'}</td>` : ''}
               <td style="font-size:0.73rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
               <td><button onclick="deleteReg(${r.id})" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:1rem" title="מחק">🗑️</button></td>
             </tr>`).join('')
-          : `<tr><td colspan="7" class="empty-slot">אין רישומים</td></tr>`;
+          : `<tr><td colspan="${isReserve ? 8 : 7}" class="empty-slot">אין רישומים</td></tr>`;
 
         return `
           <div class="slot-section${isReserve ? ' reserve-slot' : ''}">
@@ -1068,7 +1069,7 @@
             </div>
             <div id="slot-body-${slotKey}" style="${hiddenStyle}">
               <table class="reg-table">
-                <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th><th>שעה</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th>${allergyCol}<th>שעה</th><th></th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
@@ -1334,7 +1335,7 @@
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
             date, hebrewDay(date),
-            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-17:30',evening2:'סבב ב׳ 17:30-19:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 18:00-20:30'}[slotId]||slotId,
+            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-17:30',evening2:'סבב ב׳ 17:30-19:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 16:00-19:00'}[slotId]||slotId,
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);
@@ -1363,7 +1364,7 @@
   const RESERVE_SLOT_TIME_LABELS = {
     morning1:'בוקר א׳ 09:00-11:00', morning2:'בוקר ב׳ 11:00-13:00',
     evening1:'סבב א׳ 16:00-17:30', evening2:'סבב ב׳ 17:30-19:00',
-    afternoon:'סשן יחיד 16:00-18:00', reserve:'מילואים 18:00-20:30'
+    afternoon:'סשן יחיד 16:00-18:00', reserve:'מילואים 16:00-19:00'
   };
 
   // מרכז את הסינון: רק תאריכי השבוע הפעיל הנוכחי + רק חלונות "מילואים בלבד"
@@ -1391,7 +1392,7 @@
   async function exportReserveCSV() {
     const { currentWeekDates, groups } = getReserveRegistrations();
 
-    const header = ['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','שעת רישום'];
+    const header = ['תאריך','יום','חלון זמן','שם הורה','טלפון','שמות ילדים','גילאים','מספר ילדים','אלרגיות','שעת רישום'];
     const rows = [header];
     groups.forEach(({ date, slotId, regs }) => {
       regs.forEach(r => {
@@ -1399,7 +1400,7 @@
         const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
         rows.push([
           hebrewDate(date), hebrewDay(date), RESERVE_SLOT_TIME_LABELS[slotId] || slotId,
-          r.parentName, r.phone, names, ages, (r.children||[]).length,
+          r.parentName, r.phone, names, ages, (r.children||[]).length, r.allergies || '',
           new Date(r.registeredAt).toLocaleString('he-IL')
         ]);
       });
@@ -1412,7 +1413,7 @@
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [
       { wch: 10 }, { wch: 9 }, { wch: 20 }, { wch: 16 }, { wch: 13 },
-      { wch: 24 }, { wch: 12 }, { wch: 9 }, { wch: 17 }
+      { wch: 24 }, { wch: 12 }, { wch: 9 }, { wch: 22 }, { wch: 17 }
     ];
     const range = XLSX.utils.decode_range(ws['!ref']);
     for (let c = range.s.c; c <= range.e.c; c++) {
@@ -1447,7 +1448,7 @@
         <div class="rpt-slot">
           <div class="rpt-slot-title">${RESERVE_SLOT_TIME_LABELS[slotId] || slotId}</div>
           <table class="rpt-table">
-            <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th></tr></thead>
+            <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th><th>אלרגיות</th></tr></thead>
             <tbody>
               ${regs.map((r, i) => `
                 <tr>
@@ -1456,6 +1457,7 @@
                   <td dir="ltr">${r.phone}</td>
                   <td>${(r.children||[]).map(c => `${c.name}${c.age!=null?' ('+c.age+')':''}`).join(', ')}</td>
                   <td>${1 + (r.children||[]).length}</td>
+                  <td>${r.allergies || '—'}</td>
                 </tr>`).join('')}
             </tbody>
           </table>
