@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-07-19';
-const END_DATE   = '2026-07-23';
-const ACTIVE_DAYS = [0, 1, 2, 4]; // א׳, ב׳(מילואים בלבד — סבב יחיד), ג׳, ה׳ — ד׳ סגור
+const START_DATE = '2026-07-26';
+const END_DATE   = '2026-07-30';
+const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳, ב׳(מילואים בלבד — סבב יחיד), ג׳, ד׳(פתוח לכולם 16-18 + מילואים מ-18), ה׳
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
@@ -130,6 +130,14 @@ function getSlotsForDate(dateStr) {
   if (day === 1) {
     return [
       { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
+    ];
+  }
+
+  // יום ד׳ — סשן רגיל לכולם + חלון מילואים מ-18:00 ואילך
+  if (day === 3) {
+    return [
+      { id: 'afternoon', label: '16:00–18:00', display: 'סשן יחיד' },
+      { id: 'reserveWed', label: '18:00 ואילך', display: 'מילואים בלבד', reserveOnly: true },
     ];
   }
 
