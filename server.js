@@ -165,6 +165,35 @@ function hebrewDate(dateStr) {
   return `${d}/${m}/${y}`;
 }
 
+// ===== עזר: זמן נוכחי לפי שעון ישראל (בלי תלות בשעון השרת) =====
+function nowInIsrael() {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Jerusalem',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date()).map(p => [p.type, p.value])
+  );
+  return {
+    dateStr: `${parts.year}-${parts.month}-${parts.day}`,
+    minutes: Number(parts.hour) * 60 + Number(parts.minute)
+  };
+}
+
+// שולף את שעת הסיום (בדקות) מתוך label בפורמט "HH:MM–HH:MM"; מחזיר null לחלונות פתוחים ("...ואילך")
+function slotEndMinutes(label) {
+  const m = label.match(/^\d{2}:\d{2}–(\d{2}):(\d{2})$/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+function isSlotPast(dateStr, slot) {
+  const today = nowInIsrael();
+  if (dateStr < today.dateStr) return true;
+  if (dateStr > today.dateStr) return false;
+  const end = slotEndMinutes(slot.label);
+  return end !== null && end <= today.minutes;
+}
+
 // ===== שליחת אישור במייל =====
 async function sendConfirmationEmail(email, data) {
   if (!resend || !email) return;
@@ -230,12 +259,12 @@ app.get('/api/dates', async (req, res) => {
     const start = new Date(START_DATE + 'T12:00:00');
     const end   = new Date(END_DATE   + 'T12:00:00');
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = nowInIsrael().dateStr;
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       if (dateStr < todayStr) continue; // דלג על תאריכי עבר (לא כולל היום)
-      const slots = getSlotsForDate(dateStr);
+      const slots = getSlotsForDate(dateStr).filter(slot => !isSlotPast(dateStr, slot)); // דלג על חלונות של היום שכבר חלפו
       if (!slots.length) continue;
 
       const slotsInfo = await Promise.all(slots.map(async slot => {
@@ -258,8 +287,11 @@ app.post('/api/register', async (req, res) => {
     const { date, slot, parentName, phone, email, children, allergies } = req.body;
     if (!date || !slot || !parentName || !phone || !children?.length)
       return res.status(400).json({ error: 'נא למלא את כל השדות הנדרשים' });
-    if (!getSlotsForDate(date).find(s => s.id === slot))
+    const slotDef = getSlotsForDate(date).find(s => s.id === slot);
+    if (!slotDef)
       return res.status(400).json({ error: 'חריץ זמן לא חוקי' });
+    if (isSlotPast(date, slotDef))
+      return res.status(409).json({ error: 'מצטערים, המועד הזה כבר חלף', expired: true });
 
     const regs = await getSlotRegistrations(date, slot);
     const peopleCount = countPeople(regs);
