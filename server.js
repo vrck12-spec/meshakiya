@@ -192,6 +192,7 @@ async function sendConfirmationEmail(email, data) {
         <p>🕐 <strong>${data.slotLabel}</strong></p>
         <p>👨‍👩‍👧 <strong>ילדים שנרשמו:</strong></p>
         <ul style="color: #333;">${childrenList}</ul>
+        <p>📍 <strong>כתובת:</strong> רח' עליית הנוער 9, מרכז משאבים, קריית שמונה</p>
       </div>
 
       <div style="background: #fff8e1; border-right: 4px solid #f57c00; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
