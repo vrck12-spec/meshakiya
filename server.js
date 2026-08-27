@@ -10,7 +10,7 @@ const MAX_PER_SLOT = 30;
 // ===== הגדרת תאריכי פעילות =====
 const START_DATE = '2026-08-30';
 const END_DATE   = '2026-09-03';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳-ה׳, כולם עם בוקר; ב׳(מילואים בלבד — סבב יחיד), ד׳(פתוח לכולם 16-18 + מילואים מ-18)
+const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳-ב׳ עם בוקר; ב׳(מילואים בלבד — סבב יחיד אחה"צ); ג׳-ה׳ ללא בוקר, אחה"צ 16-19 בשני סבבים
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
@@ -139,12 +139,11 @@ function getSlotsForDate(dateStr) {
     ];
   }
 
-  // יום ד׳ — בוקר רגיל + סשן רגיל לכולם + חלון מילואים מ-18:00 ואילך
-  if (day === 3) {
+  // ימים ג׳-ה׳ — ללא בוקר, אחה"צ 16:00–19:00 בשני סבבים
+  if (day === 2 || day === 3 || day === 4) {
     return [
-      ...morningSlots,
-      { id: 'afternoon', label: '16:00–18:00', display: 'סשן יחיד' },
-      { id: 'reserveWed', label: '18:00 ואילך', display: 'מילואים בלבד', reserveOnly: true },
+      { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
+      { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
     ];
   }
 

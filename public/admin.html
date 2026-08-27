@@ -827,6 +827,8 @@
       evening1: '🌤️ סבב א׳ 16:00–18:00',
       evening2: '🌙 סבב ב׳ 18:00–20:00',
       afternoon: '🌆 סשן יחיד 16:00–18:00',
+      afternoon1: '🌆 סבב א׳ 16:00–17:30',
+      afternoon2: '🌆 סבב ב׳ 17:30–19:00',
       reserve: '🎖️ מילואים 16:00–19:00',
       reserveWed: '🎖️ מילואים 18:00 ואילך',
     };
@@ -834,7 +836,7 @@
   }
 
   function slotShort(slotId) {
-    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', evening1:'סבב א׳', evening2:'סבב ב׳', afternoon:'סשן יחיד', reserve:'מילואים', reserveWed:'מילואים' };
+    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', evening1:'סבב א׳', evening2:'סבב ב׳', afternoon:'סשן יחיד', afternoon1:'סבב א׳', afternoon2:'סבב ב׳', reserve:'מילואים', reserveWed:'מילואים' };
     return m[slotId] || slotId;
   }
 
@@ -842,16 +844,14 @@
     const day = new Date(dateStr + 'T12:00:00').getDay();
     if (day === 5) return ['morning1','morning2'];
     if (day === 1) return ['morning1','morning2','reserve'];
-    if (day === 3) return ['morning1','morning2','afternoon','reserveWed'];
+    if (day === 2 || day === 3 || day === 4) return ['afternoon1','afternoon2'];
     return ['morning1','morning2','evening1','evening2'];
   }
 
-  // חלונות "מילואים בלבד": יום ב׳ (סבב יחיד) ויום ד׳ (חלון reserveWed בלבד)
+  // חלון "מילואים בלבד" קיים כיום רק ביום ב׳ (סבב יחיד)
   function isReserveSlot(dateStr, slotId) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
-    if (day === 1) return true;
-    if (day === 3) return slotId === 'reserveWed';
-    return false;
+    return day === 1;
   }
 
   function capClass(pct) {
@@ -879,7 +879,7 @@
     return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
   }
 
-  const SLOT_END = { morning1:'11:00', morning2:'13:00', evening1:'18:00', evening2:'20:00', afternoon:'18:00', reserve:'19:00', reserveWed:'21:00' };
+  const SLOT_END = { morning1:'11:00', morning2:'13:00', evening1:'18:00', evening2:'20:00', afternoon:'18:00', afternoon1:'17:30', afternoon2:'19:00', reserve:'19:00', reserveWed:'21:00' };
   function isSlotPassed(dateStr, slotId) {
     const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
     const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
@@ -1338,7 +1338,7 @@
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
             date, hebrewDay(date),
-            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-18:00',evening2:'סבב ב׳ 18:00-20:00',afternoon:'סשן יחיד 16:00-18:00',reserve:'מילואים 16:00-19:00',reserveWed:'מילואים 18:00 ואילך'}[slotId]||slotId,
+            {morning1:'בוקר א׳ 09:00-11:00',morning2:'בוקר ב׳ 11:00-13:00',evening1:'סבב א׳ 16:00-18:00',evening2:'סבב ב׳ 18:00-20:00',afternoon:'סשן יחיד 16:00-18:00',afternoon1:'סבב א׳ 16:00-17:30',afternoon2:'סבב ב׳ 17:30-19:00',reserve:'מילואים 16:00-19:00',reserveWed:'מילואים 18:00 ואילך'}[slotId]||slotId,
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);
@@ -1367,8 +1367,8 @@
   const RESERVE_SLOT_TIME_LABELS = {
     morning1:'בוקר א׳ 09:00-11:00', morning2:'בוקר ב׳ 11:00-13:00',
     evening1:'סבב א׳ 16:00-18:00', evening2:'סבב ב׳ 18:00-20:00',
-    afternoon:'סשן יחיד 16:00-18:00', reserve:'מילואים 16:00-19:00',
-    reserveWed:'מילואים 18:00 ואילך'
+    afternoon:'סשן יחיד 16:00-18:00', afternoon1:'סבב א׳ 16:00-17:30', afternoon2:'סבב ב׳ 17:30-19:00',
+    reserve:'מילואים 16:00-19:00', reserveWed:'מילואים 18:00 ואילך'
   };
 
   // מרכז את הסינון: רק תאריכי השבוע הפעיל הנוכחי + רק חלונות "מילואים בלבד"
