@@ -842,10 +842,8 @@
 
   function expectedSlotsForDate(dateStr) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
-    if (day === 5) return ['morning1','morning2'];
-    if (day === 1) return ['morning1','morning2','reserve'];
-    if (day === 2 || day === 3 || day === 4) return ['afternoon1','afternoon2'];
-    return ['morning1','morning2','evening1','evening2'];
+    if (day === 1) return ['reserve'];
+    return ['afternoon1','afternoon2'];
   }
 
   // חלון "מילואים בלבד" קיים כיום רק ביום ב׳ (סבב יחיד)

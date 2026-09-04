@@ -10,7 +10,7 @@ const MAX_PER_SLOT = 30;
 // ===== הגדרת תאריכי פעילות =====
 const START_DATE = '2026-09-06';
 const END_DATE   = '2026-09-10';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // א׳-ב׳ עם בוקר; ב׳(מילואים בלבד — סבב יחיד אחה"צ); ג׳-ה׳ ללא בוקר, אחה"צ 16-19 בשני סבבים
+const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // ללא בוקר בכלל — כל הימים אחה"צ בלבד; ב׳(מילואים בלבד — סבב יחיד); א׳,ג׳-ה׳ שני סבבים 16-19
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
@@ -121,33 +121,18 @@ function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
 
-  const morningSlots = [
-    { id: 'morning1', label: '09:00–11:00', display: 'בוקר א׳' },
-    { id: 'morning2', label: '11:00–13:00', display: 'בוקר ב׳' },
-  ];
-
-  const eveningSlots = [
-    { id: 'evening1', label: '16:00–18:00', display: 'סבב א׳' },
-    { id: 'evening2', label: '18:00–20:00', display: 'סבב ב׳' },
-  ];
-
-  // יום ב׳ — בוקר רגיל + מילואים בלבד (סבב יחיד) אחה"צ
+  // יום ב׳ — מילואים בלבד, סבב יחיד אחה"צ
   if (day === 1) {
     return [
-      ...morningSlots,
       { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
     ];
   }
 
-  // ימים ג׳-ה׳ — ללא בוקר, אחה"צ 16:00–19:00 בשני סבבים
-  if (day === 2 || day === 3 || day === 4) {
-    return [
-      { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
-      { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
-    ];
-  }
-
-  return [...morningSlots, ...eveningSlots];
+  // שאר הימים — ללא בוקר, אחה"צ 16:00–19:00 בשני סבבים
+  return [
+    { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
+    { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
+  ];
 }
 
 function countPeople(regs) {
