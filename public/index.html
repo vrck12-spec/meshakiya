@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>רישום למשחקיה העירונית — 14.09–17.09</title>
+  <title>רישום למשחקיה העירונית — 22.09–24.09</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -160,12 +160,13 @@
 
     .slots-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       padding: 12px 14px;
     }
 
     .slot-btn {
-      flex: 1;
+      flex: 1 1 130px;
       padding: 10px 8px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
@@ -373,21 +374,17 @@
     </div>
     <span class="emoji">🎠</span>
     <h1>משחקיה עירונית 8</h1>
-    <div class="subtitle">14.09–17.09</div>
+    <div class="subtitle">22.09–24.09 — חול המועד סוכות</div>
     <div class="address">📍 רח' עליית הנוער 9, מרכז משאבים, קריית שמונה</div>
   </div>
 
   <!-- Info -->
   <div class="info-box">
-    <h2>🕐 שעות פעילות — 14.09–17.09</h2>
+    <h2>🕐 שעות פעילות — 22.09–24.09</h2>
     <div class="hours-grid">
-      <div class="hour-card">
-        <strong>א׳ + ג׳ + ד׳ + ה׳ — אחה"צ, שני סבבים</strong>
-        16:00–17:30 | 17:30–19:00
-      </div>
-      <div class="hour-card reserve">
-        <strong>ב׳ — מילואים בלבד, סבב יחיד</strong>
-        16:00–19:00
+      <div class="hour-card" style="grid-column:1/-1">
+        <strong>ג׳ + ד׳ + ה׳ — יום מלא רצוף, 6 סבבים</strong>
+        08:00–10:00 | 10:00–12:00 | 12:00–14:00 | 14:00–16:00 | 16:00–17:30 | 17:30–19:00
       </div>
     </div>
 
@@ -398,7 +395,6 @@
       <li><span class="icon">👨‍👧</span> הכניסה בליווי מבוגר בלבד</li>
       <li><span class="icon">🧒</span> המתחם מתאים לילדים מגיל לידה עד גיל 14</li>
       <li><span class="icon">📝</span> הכניסה ברישום מראש בקפסולות של עד 30 אנשים (כולל הורים)</li>
-      <li><span class="icon">🎖️</span> <strong>חלונות המסומנים "מילואים בלבד" מיועדים למשפחות מילואים בלבד</strong></li>
     </ul>
   </div>
 

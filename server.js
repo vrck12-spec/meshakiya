@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
 // ===== הגדרת תאריכי פעילות =====
-const START_DATE = '2026-09-14';
-const END_DATE   = '2026-09-17';
-const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // ללא בוקר בכלל — כל הימים אחה"צ בלבד; ב׳(מילואים בלבד — סבב יחיד); א׳,ג׳-ה׳ שני סבבים 16-19
+const START_DATE = '2026-09-22';
+const END_DATE   = '2026-09-24';
+const ACTIVE_DAYS = [2, 3, 4]; // שבוע חול המועד סוכות — ג׳,ד׳,ה׳ בלבד; יום מלא 08:00-19:00 ברצף, ללא מילואים
 const CLOSED_DATES = [];
 
 // ===== הגדרת שולח מייל =====
@@ -121,17 +121,14 @@ function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
 
-  // יום ב׳ — מילואים בלבד, סבב יחיד אחה"צ
-  if (day === 1) {
-    return [
-      { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
-    ];
-  }
-
-  // שאר הימים — ללא בוקר, אחה"צ 16:00–19:00 בשני סבבים
+  // שבוע חול המועד — יום מלא 08:00–19:00 ברצף, 6 סבבים
   return [
-    { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
-    { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
+    { id: 'morning1', label: '08:00–10:00', display: 'סבב א׳' },
+    { id: 'morning2', label: '10:00–12:00', display: 'סבב ב׳' },
+    { id: 'noon1', label: '12:00–14:00', display: 'סבב ג׳' },
+    { id: 'noon2', label: '14:00–16:00', display: 'סבב ד׳' },
+    { id: 'afternoon1', label: '16:00–17:30', display: 'סבב ה׳' },
+    { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ו׳' },
   ];
 }
 
