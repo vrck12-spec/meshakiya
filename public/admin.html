@@ -845,7 +845,6 @@
   function expectedSlotsForDate(dateStr) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
     if (day === 1) return ['reserve'];
-    if ([2,3,4].includes(day)) return ['morning1','morning2','noon1','noon2','afternoon1','afternoon2'];
     return ['afternoon1','afternoon2'];
   }
 
