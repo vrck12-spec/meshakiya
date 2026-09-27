@@ -822,8 +822,8 @@
 
   function slotLabel(slotId) {
     const labels = {
-      morning1: '☀️ בוקר א׳ 08:00–10:00',
-      morning2: '☀️ בוקר ב׳ 10:00–12:00',
+      morning1: '☀️ בוקר א׳ 09:00–11:30',
+      morning2: '☀️ בוקר ב׳ 11:30–14:00',
       noon1: '🌞 צהריים א׳ 12:00–14:00',
       noon2: '🌞 צהריים ב׳ 14:00–16:00',
       evening1: '🌤️ סבב א׳ 16:00–18:00',
@@ -844,14 +844,15 @@
 
   function expectedSlotsForDate(dateStr) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
-    if (day === 1) return ['reserve'];
-    return ['afternoon1','afternoon2'];
+    const morning = dateStr >= '2026-09-28' ? ['morning1','morning2'] : [];
+    if (day === 1) return [...morning, 'reserve'];
+    return [...morning, 'afternoon1','afternoon2'];
   }
 
-  // חלון "מילואים בלבד" קיים כיום רק ביום ב׳ (סבב יחיד)
+  // חלון "מילואים בלבד" קיים כיום רק ביום ב׳ אחה"צ (סבב יחיד); סבבי הבוקר של יום ב׳ פתוחים לכולם
   function isReserveSlot(dateStr, slotId) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
-    return day === 1;
+    return day === 1 && slotId === 'reserve';
   }
 
   function capClass(pct) {
@@ -879,7 +880,7 @@
     return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
   }
 
-  const SLOT_END = { morning1:'10:00', morning2:'12:00', noon1:'14:00', noon2:'16:00', evening1:'18:00', evening2:'20:00', afternoon:'18:00', afternoon1:'17:30', afternoon2:'19:00', reserve:'19:00', reserveWed:'21:00' };
+  const SLOT_END = { morning1:'11:30', morning2:'14:00', noon1:'14:00', noon2:'16:00', evening1:'18:00', evening2:'20:00', afternoon:'18:00', afternoon1:'17:30', afternoon2:'19:00', reserve:'19:00', reserveWed:'21:00' };
   function isSlotPassed(dateStr, slotId) {
     const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
     const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
@@ -1338,7 +1339,7 @@
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
             date, hebrewDay(date),
-            {morning1:'בוקר א׳ 08:00-10:00',morning2:'בוקר ב׳ 10:00-12:00',noon1:'צהריים א׳ 12:00-14:00',noon2:'צהריים ב׳ 14:00-16:00',evening1:'סבב א׳ 16:00-18:00',evening2:'סבב ב׳ 18:00-20:00',afternoon:'סשן יחיד 16:00-18:00',afternoon1:'סבב א׳ 16:00-17:30',afternoon2:'סבב ב׳ 17:30-19:00',reserve:'מילואים 16:00-19:00',reserveWed:'מילואים 18:00 ואילך'}[slotId]||slotId,
+            {morning1:'בוקר א׳ 09:00-11:30',morning2:'בוקר ב׳ 11:30-14:00',noon1:'צהריים א׳ 12:00-14:00',noon2:'צהריים ב׳ 14:00-16:00',evening1:'סבב א׳ 16:00-18:00',evening2:'סבב ב׳ 18:00-20:00',afternoon:'סשן יחיד 16:00-18:00',afternoon1:'סבב א׳ 16:00-17:30',afternoon2:'סבב ב׳ 17:30-19:00',reserve:'מילואים 16:00-19:00',reserveWed:'מילואים 18:00 ואילך'}[slotId]||slotId,
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);
@@ -1365,7 +1366,7 @@
   }
 
   const RESERVE_SLOT_TIME_LABELS = {
-    morning1:'בוקר א׳ 09:00-11:00', morning2:'בוקר ב׳ 11:00-13:00',
+    morning1:'בוקר א׳ 09:00-11:30', morning2:'בוקר ב׳ 11:30-14:00',
     evening1:'סבב א׳ 16:00-18:00', evening2:'סבב ב׳ 18:00-20:00',
     afternoon:'סשן יחיד 16:00-18:00', afternoon1:'סבב א׳ 16:00-17:30', afternoon2:'סבב ב׳ 17:30-19:00',
     reserve:'מילואים 16:00-19:00', reserveWed:'מילואים 18:00 ואילך'

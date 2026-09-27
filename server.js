@@ -12,6 +12,7 @@ const START_DATE = '2026-09-27';
 const END_DATE   = '2026-10-01';
 const ACTIVE_DAYS = [0, 1, 2, 3, 4]; // שבוע רגיל — שעות פתיחה סטנדרטיות; ב׳(מילואים בלבד — סבב יחיד); א׳,ג׳-ה׳ שני סבבים 16-19
 const CLOSED_DATES = [];
+const MORNING_FROM_DATE = '2026-09-28'; // מתאריך זה נוספים סבבי בוקר 09:00–14:00 (מורות חיילות), הפסקה 14:00–16:00
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -121,15 +122,23 @@ function getSlotsForDate(dateStr) {
   const day = new Date(dateStr + 'T12:00:00').getDay();
   if (!ACTIVE_DAYS.includes(day)) return [];
 
-  // יום ב׳ — מילואים בלבד, סבב יחיד אחה"צ
+  // בוקר 09:00–14:00 בשני סבבים, פתוח לכולם (כולל יום ב׳)
+  const morning = dateStr >= MORNING_FROM_DATE ? [
+    { id: 'morning1', label: '09:00–11:30', display: 'בוקר א׳' },
+    { id: 'morning2', label: '11:30–14:00', display: 'בוקר ב׳' },
+  ] : [];
+
+  // יום ב׳ — אחה"צ מילואים בלבד, סבב יחיד
   if (day === 1) {
     return [
+      ...morning,
       { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
     ];
   }
 
-  // שאר הימים — ללא בוקר, אחה"צ 16:00–19:00 בשני סבבים
+  // שאר הימים — אחה"צ 16:00–19:00 בשני סבבים
   return [
+    ...morning,
     { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
     { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
   ];
