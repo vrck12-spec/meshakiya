@@ -1,9 +1,11 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { Resend } = require('resend');
 
 const app = express();
+app.set('trust proxy', 1); // Railway מעביר דרך proxy — כדי ש-req.ip יהיה כתובת הלקוח האמיתית
 const PORT = process.env.PORT || 3000;
 const MAX_PER_SLOT = 30;
 
@@ -16,6 +18,62 @@ const MORNING_FROM_DATE = '2026-09-28'; // מתאריך זה נוספים סבב
 
 // ===== הגדרת שולח מייל =====
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// ===== הרשאות ניהול =====
+// המנהלים והסיסמאות מוגדרים רק במשתני סביבה ב-Railway (לא בקוד):
+// MANAGER1_NAME, MANAGER1_PASSWORD, MANAGER2_NAME, MANAGER2_PASSWORD, AUTH_SECRET
+const IS_PRODUCTION = !!process.env.RAILWAY_ENVIRONMENT;
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 יום
+
+function getManagers() {
+  const managers = [1, 2]
+    .map(n => ({ name: process.env[`MANAGER${n}_NAME`], password: process.env[`MANAGER${n}_PASSWORD`] }))
+    .filter(m => m.name && m.password);
+  // מצב פיתוח מקומי בלבד — סיסמת פיתוח; בשרת (Railway) אין ברירת מחדל והניהול חסום עד שיוגדרו משתנים
+  if (!managers.length && !IS_PRODUCTION) return [{ name: 'מפתח מקומי', password: '1234' }];
+  return managers;
+}
+
+const AUTH_SECRET = process.env.AUTH_SECRET || (IS_PRODUCTION ? null : crypto.randomBytes(32).toString('hex'));
+
+function sha256(s) { return crypto.createHash('sha256').update(String(s)).digest(); }
+function safeEqual(a, b) { return crypto.timingSafeEqual(sha256(a), sha256(b)); }
+
+function signToken(payload) {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!AUTH_SECRET || !token) return null;
+  const [body, sig] = token.split('.');
+  if (!body || !sig) return null;
+  const expected = crypto.createHmac('sha256', AUTH_SECRET).update(body).digest('base64url');
+  if (!safeEqual(sig, expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    // מנהל שהוסר ממשתני הסביבה מאבד גישה מיד
+    if (!getManagers().some(m => m.name === payload.name)) return null;
+    return payload;
+  } catch { return null; }
+}
+
+function requireManager(req, res, next) {
+  if (!AUTH_SECRET || !getManagers().length)
+    return res.status(503).json({ error: 'הניהול עדיין לא הוגדר בשרת' });
+  const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+  const user = verifyToken(token);
+  if (!user) return res.status(401).json({ error: 'נדרשת כניסה' });
+  req.user = user;
+  next();
+}
+
+// הגבלת ניסיונות כניסה: 5 שגויים מאותה כתובת → חסימה ל-15 דקות
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_BLOCK_MS = 15 * 60 * 1000;
+const loginFails = new Map(); // ip -> { count, until }
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -329,12 +387,45 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.get('/api/admin', async (req, res) => {
+app.post('/api/login', (req, res) => {
+  if (!AUTH_SECRET || !getManagers().length)
+    return res.status(503).json({ error: 'הניהול עדיין לא הוגדר בשרת' });
+
+  const ip = req.ip;
+  const now = Date.now();
+  const rec = loginFails.get(ip);
+  if (rec && rec.until > now) {
+    const minutes = Math.ceil((rec.until - now) / 60000);
+    return res.status(429).json({ error: `יותר מדי ניסיונות שגויים. נסה שוב בעוד ${minutes} דקות` });
+  }
+
+  const password = String(req.body?.password || '');
+  // בודקים מול כל המנהלים (בלי לעצור בהתאמה הראשונה) כדי לא לחשוף מידע דרך זמן התגובה
+  let user = null;
+  for (const m of getManagers()) if (safeEqual(password, m.password) && !user) user = m;
+
+  if (!user) {
+    // ניסיונות שגויים ישנים (מעל 15 דקות) או חסימה שפגה — מתחילים ספירה מחדש
+    const count = (rec && now - rec.last < LOGIN_BLOCK_MS && rec.until <= rec.last ? rec.count : 0) + 1;
+    loginFails.set(ip, { count, last: now, until: count >= LOGIN_MAX_FAILS ? now + LOGIN_BLOCK_MS : 0 });
+    return res.status(401).json({ error: 'סיסמה שגויה' });
+  }
+
+  loginFails.delete(ip);
+  const token = signToken({ name: user.name, role: 'manager', exp: now + TOKEN_TTL_MS });
+  res.json({ token, name: user.name });
+});
+
+app.get('/api/me', requireManager, (req, res) => {
+  res.json({ name: req.user.name, role: req.user.role });
+});
+
+app.get('/api/admin', requireManager, async (req, res) => {
   try { res.json(await getAllData()); }
   catch (e) { res.status(500).json({ error: 'שגיאת שרת' }); }
 });
 
-app.delete('/api/admin/registration/:id', async (req, res) => {
+app.delete('/api/admin/registration/:id', requireManager, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (db) {
@@ -362,5 +453,8 @@ initDB().then(() => {
     console.log(`✅ השרת פועל על: http://localhost:${PORT}`);
     console.log(db ? '   מצב: PostgreSQL ☁️' : '   מצב: קובץ JSON 💾 (מקומי)\n');
     console.log(process.env.RESEND_API_KEY ? '📧 Resend: מוגדר ✅' : '   מייל: לא מוגדר');
+    const managers = getManagers();
+    if (!AUTH_SECRET || !managers.length) console.warn('⚠️ ניהול חסום: חסרים משתני סביבה MANAGER1_NAME/PASSWORD, MANAGER2_NAME/PASSWORD, AUTH_SECRET');
+    else console.log(`🔐 מנהלים מוגדרים: ${managers.map(m => m.name).join(', ')}`);
   });
 }).catch(e => { console.error('שגיאה באתחול:', e); process.exit(1); });

@@ -692,7 +692,7 @@
 <div class="topbar">
   <div class="topbar-title">
     <div class="h1">🎠 משחקיה עירונית 8</div>
-    <div class="sub">פאנל ניהול</div>
+    <div class="sub">פאנל ניהול<span id="userName"></span></div>
   </div>
   <div class="topbar-actions" id="topbarActions" style="display:none">
     <button class="topbar-btn active" id="btnAdmin" onclick="switchView('admin')">📋 תצוגת מנהל</button>
@@ -702,6 +702,7 @@
     <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()" title="קובץ Excel של נרשמי המילואים לשבוע הנוכחי">🎖️ ייצוא מילואים לאקסל</button>
     <button class="export-btn reserve-export" id="btnPdfReserve" onclick="exportReservePDF()" title="רשימה מעוצבת להדפסה/שמירה כ-PDF">🖨️ PDF מילואים</button>
     <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
+    <button class="topbar-btn" id="btnLogout" onclick="logout()" title="יציאה מהחשבון במכשיר זה">🚪 יציאה</button>
   </div>
 </div>
 
@@ -710,10 +711,10 @@
   <div class="login-card">
     <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
     <h2>כניסת מנהל</h2>
-    <p>הזן קוד גישה</p>
-    <input type="password" id="passInput" placeholder="••••••" onkeydown="if(event.key==='Enter')login()" />
-    <button class="login-btn" onclick="login()">כניסה</button>
-    <div class="login-err" id="loginErr">קוד שגוי, נסה שוב</div>
+    <p>הזן את הסיסמה האישית שלך</p>
+    <input type="password" id="passInput" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" />
+    <button class="login-btn" id="loginBtn" onclick="login()">כניסה</button>
+    <div class="login-err" id="loginErr">סיסמה שגויה, נסה שוב</div>
   </div>
 </div>
 
@@ -808,7 +809,6 @@
 <div id="reservePrintScreen"></div>
 
 <script>
-  const ADMIN_PASS = '1234';
   let allData = {};
   let allEventDates = []; // כל תאריכי האירוע (כולל ריקים)
   let currentView = 'admin';
@@ -899,17 +899,80 @@
     return new Date() > end;
   }
 
-  // ── login ─────────────────────────────────────────────────
-  function login() {
-    if (document.getElementById('passInput').value === ADMIN_PASS) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('mainScreen').style.display = 'block';
-      document.getElementById('topbarActions').style.display = 'flex';
-      loadData();
-    } else {
-      document.getElementById('loginErr').style.display = 'block';
+  // ── auth ──────────────────────────────────────────────────
+  // הסיסמה נבדקת בשרת; השרת מחזיר אסימון חתום (תקף 30 יום) שנשמר במכשיר
+  const TOKEN_KEY = 'meshakiyaAdminToken';
+  function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
+  function setToken(t) { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch {} }
+
+  // fetch לנתיבי ניהול — מצרף את האסימון; אם פג/לא תקף חוזרים למסך הכניסה
+  async function authFetch(url, opts = {}) {
+    const res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + getToken() } });
+    if (res.status === 401) { showLogin('פג תוקף הכניסה, יש להתחבר מחדש'); throw new Error('unauthorized'); }
+    return res;
+  }
+
+  function showApp(name) {
+    document.getElementById('userName').textContent = name ? ' · שלום, ' + name : '';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('topbarActions').style.display = 'flex';
+    switchView(currentView);
+    loadData();
+  }
+
+  function showLogin(msg) {
+    setToken(null);
+    ['mainScreen','managerScreen','briefScreen'].forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('topbarActions').style.display = 'none';
+    document.getElementById('userName').textContent = '';
+    document.getElementById('loginScreen').style.display = '';
+    const err = document.getElementById('loginErr');
+    err.textContent = msg || '';
+    err.style.display = msg ? 'block' : 'none';
+  }
+
+  async function login() {
+    const input = document.getElementById('passInput');
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginErr');
+    err.style.display = 'none';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: input.value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        err.textContent = data.error || 'שגיאה בכניסה';
+        err.style.display = 'block';
+        return;
+      }
+      input.value = '';
+      setToken(data.token);
+      showApp(data.name);
+    } catch {
+      err.textContent = 'שגיאת תקשורת, נסה שוב';
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
     }
   }
+
+  function logout() {
+    if (!confirm('לצאת מהחשבון במכשיר זה?')) return;
+    showLogin();
+  }
+
+  // כניסה אוטומטית אם יש אסימון תקף שמור במכשיר
+  (async () => {
+    if (!getToken()) return;
+    try {
+      const res = await authFetch('/api/me');
+      if (res.ok) showApp((await res.json()).name);
+    } catch {}
+  })();
 
   // ── view switch ───────────────────────────────────────────
   function switchView(v) {
@@ -929,7 +992,7 @@
   async function loadData() {
     try {
       const [adminRes, datesRes] = await Promise.all([
-        fetch('/api/admin'),
+        authFetch('/api/admin'),
         fetch('/api/dates')
       ]);
       allData = await adminRes.json();
@@ -944,7 +1007,7 @@
       document.getElementById('mgrLastUpdate').textContent = now;
       document.getElementById('briefLastUpdate').textContent = now;
     } catch (e) {
-      alert('שגיאה בטעינת נתונים');
+      if (e.message !== 'unauthorized') alert('שגיאה בטעינת נתונים');
     }
   }
 
@@ -952,10 +1015,10 @@
   async function deleteReg(id) {
     if (!confirm('למחוק רישום זה?')) return;
     try {
-      const res = await fetch('/api/admin/registration/' + id, { method: 'DELETE' });
+      const res = await authFetch('/api/admin/registration/' + id, { method: 'DELETE' });
       if (res.ok) loadData();
       else alert('שגיאה במחיקה');
-    } catch { alert('שגיאת תקשורת'); }
+    } catch (e) { if (e.message !== 'unauthorized') alert('שגיאת תקשורת'); }
   }
 
   // ── ADMIN RENDER ──────────────────────────────────────────
