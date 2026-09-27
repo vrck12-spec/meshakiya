@@ -65,6 +65,29 @@
 
     .vacation-notice strong { color: #e65100; font-size: 1rem; }
 
+    .notice-contacts {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1.5px dashed rgba(239,108,0,0.4);
+    }
+    .notice-contacts-title { font-weight: bold; color: #bf360c; font-size: 0.95rem; margin-bottom: 8px; }
+    .notice-contacts-list { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .notice-contact {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border: 1.5px solid #ffb74d;
+      border-radius: 999px;
+      padding: 6px 14px;
+      text-decoration: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: background 0.2s;
+    }
+    .notice-contact:hover { background: #fff8f0; }
+    .notice-contact .name { font-weight: bold; color: #e65100; }
+    .notice-contact .phone { font-weight: bold; color: #4e342e; letter-spacing: 0.3px; }
+
     /* ===== Info Box ===== */
     .info-box {
       background: white;
@@ -398,6 +421,13 @@
   <div class="vacation-notice">
     🍂 <strong>חדש! החל ממחר, יום ב׳ 28.09, המשחקייה העירונית פתוחה גם בבוקר!</strong><br>
     בימים ב׳–ה׳ (28.09–01.10) המשחקייה תפעל בבוקר בין השעות <strong>09:00–14:00</strong> (בשני סבבים), הפסקה בין 14:00–16:00, ואחה"צ <strong>16:00–19:00</strong> כרגיל. הכניסה בהרשמה מראש בלבד, דרך הטופס שלמטה.
+    <div class="notice-contacts">
+      <div class="notice-contacts-title">📞 לבירורים ושאלות ניתן לפנות ל:</div>
+      <div class="notice-contacts-list">
+        <a class="notice-contact" href="tel:0532298181"><span class="name">שלומי</span><span class="phone" dir="ltr">053-2298181</span></a>
+        <a class="notice-contact" href="tel:0508675041"><span class="name">מזי</span><span class="phone" dir="ltr">050-8675041</span></a>
+      </div>
+    </div>
   </div>
 
   <!-- Info -->
