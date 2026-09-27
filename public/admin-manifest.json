@@ -1,0 +1,18 @@
+{
+  "id": "/admin.html",
+  "name": "ניהול משחקיה",
+  "short_name": "ניהול משחקיה",
+  "description": "ניהול רישומים — משחקיה עירונית 8, קריית שמונה",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/admin.html",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
