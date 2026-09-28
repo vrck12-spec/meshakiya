@@ -3,3 +3,4 @@ registrations.json
 *.png.png
 
 backups/
+schedule-settings.json
