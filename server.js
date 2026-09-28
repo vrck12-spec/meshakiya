@@ -16,16 +16,20 @@ const DEFAULT_CAPACITY = 30;
 // ברירת המחדל בהפעלה ראשונה — משחזרת בדיוק את המצב שהיה קבוע בקוד לפני המעבר למנוע ההגדרות:
 // שבוע רגיל א׳,ג׳,ד׳,ה׳ אחה"צ 16:00–19:00 בשני סבבים; ב׳ מילואים בלבד 16:00–19:00 סבב יחיד;
 // מ-28.09.2026 נוספים לכל הימים הפעילים סבבי בוקר 09:00–14:00 (מורות חיילות), הפסקה 14:00–16:00.
+// גרסת מבנה ההגדרות. עולה כשמתווסף שדה חדש שרשומה קיימת במסד הנתונים לא כוללת —
+// migrateScheduleSettings() למטה משלימה אותו אוטומטית ברשומות ישנות, בלי לגעת בשאר הנתונים.
+const SETTINGS_VERSION = 2;
+
 function buildDefaultScheduleSettings() {
   const afternoon = [
-    { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳' },
-    { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳' },
+    { id: 'afternoon1', label: '16:00–17:30', display: 'סבב א׳', period: 'אחה"צ' },
+    { id: 'afternoon2', label: '17:30–19:00', display: 'סבב ב׳', period: 'אחה"צ' },
   ];
   const reserveOnly = [
     { id: 'reserve', label: '16:00–19:00', display: 'מילואים בלבד — סבב יחיד', reserveOnly: true },
   ];
   return {
-    version: 1,
+    version: SETTINGS_VERSION,
     capacityDefault: DEFAULT_CAPACITY,
     // תבנית שבועית: מפתח = getDay() (0=א׳...4=ה׳). ו׳(5) ו-ש׳(6) תמיד סגורים ואינם חלק מהתבנית.
     weeklyTemplate: {
@@ -44,8 +48,8 @@ function buildDefaultScheduleSettings() {
         days: [0, 1, 2, 3, 4],
         type: 'add', // מוסיף סבבים לפני מה שכבר קיים באותו יום (בוקר לפני אחה"צ/מילואים)
         slots: [
-          { id: 'morning1', label: '09:00–11:30', display: 'בוקר א׳' },
-          { id: 'morning2', label: '11:30–14:00', display: 'בוקר ב׳' },
+          { id: 'morning1', label: '09:00–11:30', display: 'בוקר א׳', period: 'בוקר' },
+          { id: 'morning2', label: '11:30–14:00', display: 'בוקר ב׳', period: 'בוקר' },
         ],
         note: 'סבבי בוקר (מורות חיילות), הפסקה 14:00–16:00',
       },
@@ -246,16 +250,48 @@ let scheduleSettings = null;
 const SETTINGS_FILE = path.join(__dirname, 'schedule-settings.json');
 const SETTINGS_KEY = 'schedule';
 
+// משלימה שדות חדשים שנוספו למבנה ההגדרות מאז שרשומה זו נשמרה, בלי לגעת בשאר הנתונים (עריכות המנהלים).
+// מריצה רק פעם אחת לכל גרסה (version), ולא דורסת ערך קיים אם כבר הוגדר.
+function migrateScheduleSettings(settings) {
+  let changed = false;
+  const version = settings.version || 1;
+  if (version < 2) {
+    Object.values(settings.weeklyTemplate || {}).forEach(dayArr =>
+      (dayArr || []).forEach(s => { if (!s.reserveOnly && s.period === undefined && s.id?.startsWith('afternoon')) { s.period = 'אחה"צ'; changed = true; } })
+    );
+    (settings.exceptions || []).forEach(ex =>
+      (ex.slots || []).forEach(s => { if (s.period === undefined && s.id?.startsWith('morning')) { s.period = 'בוקר'; changed = true; } })
+    );
+  }
+  if (version !== SETTINGS_VERSION) { settings.version = SETTINGS_VERSION; changed = true; }
+  return changed;
+}
+
+// שמירה "שקטה" של תיקון מיגרציה בלבד — לא נוגעת ב-updatedAt/updatedBy (שמייצגים עריכה אנושית אחרונה)
+async function persistScheduleSettings(settings) {
+  if (db) {
+    await db.query(
+      'INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=$2',
+      [SETTINGS_KEY, settings]
+    );
+  } else {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+  }
+}
+
 async function loadScheduleSettings() {
   if (db) {
     const res = await db.query('SELECT value FROM settings WHERE key=$1', [SETTINGS_KEY]);
-    if (res.rows.length) { scheduleSettings = res.rows[0].value; return; }
-    scheduleSettings = buildDefaultScheduleSettings();
-    await db.query('INSERT INTO settings (key, value) VALUES ($1,$2)', [SETTINGS_KEY, scheduleSettings]);
-    return;
+    if (res.rows.length) { scheduleSettings = res.rows[0].value; }
+    else {
+      scheduleSettings = buildDefaultScheduleSettings();
+      await db.query('INSERT INTO settings (key, value) VALUES ($1,$2)', [SETTINGS_KEY, scheduleSettings]);
+    }
+  } else {
+    try { scheduleSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); }
+    catch { scheduleSettings = buildDefaultScheduleSettings(); fs.writeFileSync(SETTINGS_FILE, JSON.stringify(scheduleSettings, null, 2), 'utf8'); }
   }
-  try { scheduleSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); }
-  catch { scheduleSettings = buildDefaultScheduleSettings(); fs.writeFileSync(SETTINGS_FILE, JSON.stringify(scheduleSettings, null, 2), 'utf8'); }
+  if (migrateScheduleSettings(scheduleSettings)) await persistScheduleSettings(scheduleSettings);
 }
 
 async function saveScheduleSettings(newSettings, managerName) {

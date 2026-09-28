@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>רישום למשחקיה העירונית — 27.09–01.10</title>
+  <title>רישום למשחקיה העירונית</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -413,40 +413,17 @@
     </div>
     <span class="emoji">🎠</span>
     <h1>משחקיה עירונית 8</h1>
-    <div class="subtitle">27.09–01.10</div>
+    <div class="subtitle" id="headerSubtitle"></div>
     <div class="address">📍 רח' עליית הנוער 9, מרכז משאבים, קריית שמונה</div>
   </div>
 
-  <!-- Vacation Notice -->
-  <div class="vacation-notice">
-    🍂 <strong>חדש! החל מיום ב׳ 28.09 המשחקייה העירונית פתוחה גם בבוקר!</strong><br>
-    בימים ב׳–ה׳ (28.09–01.10) המשחקייה תפעל בבוקר בין השעות <strong>09:00–14:00</strong> (בשני סבבים), הפסקה בין 14:00–16:00, ואחה"צ <strong>16:00–19:00</strong> כרגיל. הכניסה בהרשמה מראש בלבד, דרך הטופס שלמטה.
-    <div class="notice-contacts">
-      <div class="notice-contacts-title">📞 לבירורים ושאלות ניתן לפנות ל:</div>
-      <div class="notice-contacts-list">
-        <a class="notice-contact" href="tel:0532298181"><span class="name">שלומי</span><span class="phone" dir="ltr">053-2298181</span></a>
-        <a class="notice-contact" href="tel:0508675041"><span class="name">מזי</span><span class="phone" dir="ltr">050-8675041</span></a>
-      </div>
-    </div>
-  </div>
+  <!-- Vacation Notice (מתמלא מ-/api/schedule) -->
+  <div class="vacation-notice" id="vacationNotice" style="display:none"></div>
 
   <!-- Info -->
   <div class="info-box">
-    <h2>🕐 שעות פעילות — 27.09–01.10</h2>
-    <div class="hours-grid">
-      <div class="hour-card" style="grid-column:1/-1">
-        <strong>ב׳–ה׳ (מ-28.09) — בוקר, שני סבבים</strong>
-        09:00–11:30 | 11:30–14:00
-      </div>
-      <div class="hour-card">
-        <strong>א׳ + ג׳ + ד׳ + ה׳ — אחה"צ, שני סבבים</strong>
-        16:00–17:30 | 17:30–19:00
-      </div>
-      <div class="hour-card reserve">
-        <strong>ב׳ — מילואים בלבד, סבב יחיד</strong>
-        16:00–19:00
-      </div>
-    </div>
+    <h2>🕐 שעות פעילות<span id="hoursRangeSuffix"></span></h2>
+    <div class="hours-grid" id="hoursGrid"></div>
 
     <h2>📋 נהלים חשובים</h2>
     <ul class="rules-list">
@@ -454,7 +431,7 @@
       <li><span class="icon">👟</span> חובה על כולם (כולל הורים) להוריד נעליים בכניסה</li>
       <li><span class="icon">👨‍👧</span> הכניסה בליווי מבוגר בלבד</li>
       <li><span class="icon">🧒</span> המתחם מתאים לילדים מגיל לידה עד גיל 14</li>
-      <li><span class="icon">📝</span> הכניסה ברישום מראש בקפסולות של עד 30 אנשים (כולל הורים)</li>
+      <li><span class="icon">📝</span> הכניסה ברישום מראש בקפסולות של עד <span id="capacityText">30</span> אנשים (כולל הורים)</li>
       <li><span class="icon">🎖️</span> <strong>חלונות המסומנים "מילואים בלבד" מיועדים למשפחות מילואים בלבד</strong></li>
     </ul>
   </div>
@@ -535,6 +512,146 @@
   let selectedSlot = null;
   let allDatesData = [];
   let childCount = 0;
+
+  // ===== לוח השעות: באנר, כרטיסי שעות וטווח תאריכים — נטענים מ-/api/schedule =====
+  const DAY_LETTERS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳'];
+  function dateToStr(d) { return d.toISOString().split('T')[0]; }
+  function formatShortDate(dateStr) { const [, m, d] = dateStr.split('-'); return `${d}.${m}`; }
+
+  // מחשב את הסבבים לתאריך נתון לפי תבנית שבועית + חריגים — זהה ללוגיקה בשרת (server.js: computeSlotsForDate)
+  function computeSlotsForDateClient(dateStr, settings) {
+    const day = new Date(dateStr + 'T12:00:00').getDay();
+    if (day === 5 || day === 6) return [];
+    let slots = (settings.weeklyTemplate[day] || []).map(s => ({ ...s }));
+    for (const ex of settings.exceptions || []) {
+      if (dateStr < ex.startDate) continue;
+      if (ex.endDate && dateStr > ex.endDate) continue;
+      if (ex.days && !ex.days.includes(day)) continue;
+      if (ex.type === 'closed') slots = [];
+      else if (ex.type === 'replace') slots = (ex.slots || []).map(s => ({ ...s }));
+      else if (ex.type === 'add') slots = [...(ex.slots || []).map(s => ({ ...s })), ...slots];
+    }
+    return slots;
+  }
+
+  function formatDayRange(days) {
+    if (days.length === 1) return DAY_LETTERS[days[0]];
+    const contiguous = days.every((d, i) => i === 0 || d === days[i - 1] + 1);
+    return contiguous ? `${DAY_LETTERS[days[0]]}–${DAY_LETTERS[days[days.length - 1]]}` : days.map(d => DAY_LETTERS[d]).join(' + ');
+  }
+
+  function slotSig(slots) {
+    return JSON.stringify(slots.map(s => ({ label: s.label, display: s.display, reserveOnly: !!s.reserveOnly, period: s.period || null })));
+  }
+
+  // בונה את כרטיסי "שעות פעילות" מתוך התבנית השבועית והחריגים, לטווח התאריכים המוצג
+  function buildHourCards(settings, range) {
+    const days = [];
+    for (let d = new Date(range.start + 'T12:00:00'); dateToStr(d) <= range.end; d.setDate(d.getDate() + 1)) {
+      const dow = d.getDay();
+      if (dow !== 5 && dow !== 6) days.push({ date: dateToStr(d), dow });
+    }
+    if (!days.length) return [];
+
+    const overriddenDows = new Set();
+    const exceptionCards = [];
+
+    (settings.exceptions || []).forEach(ex => {
+      const applicableDows = new Set();
+      days.forEach(({ date, dow }) => {
+        if (date < ex.startDate) return;
+        if (ex.endDate && date > ex.endDate) return;
+        if (ex.days && !ex.days.includes(dow)) return;
+        applicableDows.add(dow);
+      });
+      if (!applicableDows.size) return;
+      const dowList = [...applicableDows].sort((a, b) => a - b);
+      if (ex.type === 'closed') {
+        dowList.forEach(d => overriddenDows.add(d));
+      } else if (ex.type === 'replace') {
+        dowList.forEach(d => overriddenDows.add(d));
+        exceptionCards.push({ days: dowList, slots: ex.slots || [], isNew: ex.startDate >= range.start, startDate: ex.startDate, fromException: true });
+      } else if (ex.type === 'add') {
+        exceptionCards.push({ days: dowList, slots: ex.slots || [], isNew: ex.startDate >= range.start, startDate: ex.startDate, fromException: true });
+      }
+    });
+
+    const baseGroups = new Map();
+    days.forEach(({ dow }) => {
+      if (overriddenDows.has(dow)) return;
+      const slots = settings.weeklyTemplate[dow] || [];
+      if (!slots.length) return;
+      const sig = slotSig(slots);
+      if (!baseGroups.has(sig)) baseGroups.set(sig, { days: new Set(), slots });
+      baseGroups.get(sig).days.add(dow);
+    });
+
+    const cards = [];
+    baseGroups.forEach(g => cards.push({ days: [...g.days].sort((a, b) => a - b), slots: g.slots, fromException: false }));
+
+    const mergeMap = new Map();
+    exceptionCards.forEach(c => {
+      const key = c.days.join(',') + '|' + slotSig(c.slots);
+      if (!mergeMap.has(key)) mergeMap.set(key, c);
+    });
+    mergeMap.forEach(c => cards.push(c));
+
+    return cards;
+  }
+
+  function cardSubtitle(card) {
+    const countLabel = card.slots.length > 1 ? 'שני סבבים' : 'סבב יחיד';
+    if (card.slots.length === 1 && card.slots[0].reserveOnly) return `מילואים בלבד, ${countLabel}`;
+    const period = card.slots[0]?.period;
+    return period ? `${period}, ${countLabel}` : countLabel;
+  }
+
+  function renderHourCards(settings, range) {
+    const cards = buildHourCards(settings, range);
+    const html = cards.map(card => {
+      const isReserve = card.slots.length === 1 && card.slots[0].reserveOnly;
+      const newTag = card.isNew && card.startDate ? ` (מ-${formatShortDate(card.startDate)})` : '';
+      const style = card.fromException ? 'grid-column:1/-1' : '';
+      return `
+        <div class="hour-card ${isReserve ? 'reserve' : ''}" style="${style}">
+          <strong>${formatDayRange(card.days)}${newTag} — ${cardSubtitle(card)}</strong>
+          ${card.slots.map(s => s.label).join(' | ')}
+        </div>`;
+    }).join('');
+    document.getElementById('hoursGrid').innerHTML = html ||
+      '<div style="color:#888;text-align:center;grid-column:1/-1">אין שעות פעילות מוגדרות כרגע</div>';
+  }
+
+  function renderBanner(banner) {
+    const el = document.getElementById('vacationNotice');
+    if (banner && banner.enabled && banner.html) {
+      el.innerHTML = banner.html;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  async function loadSchedule() {
+    try {
+      const res = await fetch('/api/schedule');
+      const schedule = await res.json();
+      const range = schedule.registrationRange;
+      const rangeLabel = `${formatShortDate(range.start)}–${formatShortDate(range.end)}`;
+
+      document.title = `רישום למשחקיה העירונית — ${rangeLabel}`;
+      document.getElementById('headerSubtitle').textContent = rangeLabel;
+      document.getElementById('hoursRangeSuffix').textContent = ` — ${rangeLabel}`;
+      document.getElementById('capacityText').textContent = schedule.capacityDefault || 30;
+
+      renderBanner(schedule.banner);
+      renderHourCards(schedule, range);
+    } catch (e) {
+      // גם אם טעינת הלוח נכשלה, טופס ההרשמה (loadDates) ימשיך לעבוד
+      document.getElementById('vacationNotice').style.display = 'none';
+      document.getElementById('hoursGrid').innerHTML = '<div style="color:#c62828;text-align:center;grid-column:1/-1">שגיאה בטעינת שעות הפעילות</div>';
+    }
+  }
 
   // ===== Load Dates =====
   async function loadDates() {
@@ -759,6 +876,7 @@
   }
 
   // Init
+  loadSchedule();
   loadDates();
 </script>
 </body>
