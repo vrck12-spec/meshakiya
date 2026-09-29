@@ -684,6 +684,147 @@
     }
     .rpt-day { page-break-inside: avoid; }
   }
+
+  /* ===== מסך עריכת שעות פעילות ===== */
+  .sched-preview-box { background: #fafcff; border: 1.5px dashed #c3d7ef; border-radius: 12px; padding: 14px; }
+
+  .vacation-notice-preview {
+    background: linear-gradient(135deg, #eaf8ef, #e3f7f7);
+    border-radius: 16px; padding: 16px 20px; box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+    border-right: 5px solid #5cc6b8; color: #35524e; font-size: 0.92rem; line-height: 1.6; text-align: center;
+  }
+  .vacation-notice-preview strong { color: #1f8a7a; font-size: 1rem; }
+  .notice-contacts { margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed rgba(92,198,184,0.55); }
+  .notice-contacts-title { font-weight: bold; color: #1f7a6d; font-size: 0.95rem; margin-bottom: 8px; }
+  .notice-contacts-list { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .notice-contact { display: inline-flex; align-items: center; gap: 8px; background: white; border: 1.5px solid #a8e0d4; border-radius: 999px; padding: 6px 14px; text-decoration: none; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .notice-contact .name { font-weight: bold; color: #1f8a7a; }
+  .notice-contact .phone { font-weight: bold; color: #2e4a46; }
+
+  .hours-grid-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .hours-grid-preview .hour-card { background: #e3f2fd; border-radius: 10px; padding: 10px 14px; font-size: 0.88rem; color: #1565c0; }
+  .hours-grid-preview .hour-card strong { display: block; font-size: 0.78rem; color: #555; margin-bottom: 3px; }
+  .hours-grid-preview .hour-card.reserve { background: #fdf6e8; color: #6d5429; }
+  .hours-grid-preview .hour-card.reserve strong { color: #6d5429; }
+
+  /* כותרת מסך העריכה בוורוד בהיר, כדי להבדיל אותו ויזואלית ממסכי הצפייה (שאר הכותרות כחולות) */
+  #scheduleScreen .mgr-hero {
+    background: linear-gradient(135deg, #b9557d, #9c4468);
+    box-shadow: 0 6px 24px rgba(156,68,104,0.32);
+  }
+
+  /* כפתורי השמירה/הביטול לא היו מעוצבים כלל (נופלים לעיצוב ברירת המחדל של הדפדפן) — עכשיו עקביים עם שאר האתר */
+  #scheduleScreen .submit-btn, #scheduleScreen .back-btn {
+    font-family: inherit; font-size: 1rem; font-weight: bold; cursor: pointer;
+    padding: 13px 20px; border: none; border-radius: 12px; transition: all 0.2s;
+  }
+  #scheduleScreen .submit-btn {
+    background: linear-gradient(135deg, #b9557d, #9c4468); color: white;
+    box-shadow: 0 4px 14px rgba(156,68,104,0.3);
+  }
+  #scheduleScreen .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(156,68,104,0.4); }
+  #scheduleScreen .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  #scheduleScreen .back-btn { background: #eee; color: #555; border: 1.5px solid #ddd !important; }
+  #scheduleScreen .back-btn:hover { background: #e2e2e2; }
+
+  /* ── מקטעים צבועים לפי סוג ── */
+  .sched-section-preview  { border-right: 5px solid #5cc6b8; }
+  .sched-section-weekly   { border-right: 5px solid #1565c0; }
+  .sched-section-exceptions { border-right: 5px solid #d9709d; }
+  .sched-section-banner   { border-right: 5px solid #5cc6b8; }
+  .sched-section-general  { border-right: 5px solid #90a4ae; }
+
+  .sched-hint { font-size: 0.8rem; color: #999; margin: -6px 0 14px; line-height: 1.5; }
+
+  /* ── כרטיס יום (תבנית שבועית) ── */
+  .sched-day-card {
+    background: linear-gradient(180deg, #fafcff, #ffffff);
+    border: 1.5px solid #e3ecf7; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(21,101,192,0.04);
+  }
+  .sched-day-card.sched-day-closed { background: #f7f7f7; border-color: #eaeaea; }
+  .sched-day-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sched-day-title { display: flex; align-items: center; gap: 10px; }
+  .sched-day-title strong { font-size: 1rem; color: #1a3a5c; }
+  .sched-day-badge { font-size: 0.72rem; font-weight: 700; background: #e3f2fd; color: #1565c0; border-radius: 999px; padding: 3px 10px; }
+  .sched-day-badge.closed { background: #eee; color: #999; }
+  .sched-day-actions { display: flex; gap: 8px; align-items: center; }
+  .sched-day-actions select { border: 1.5px solid #d7e3f2; border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 0.8rem; color: #444; background: white; }
+
+  /* ── כרטיס חריג ── */
+  .sched-exc-card {
+    background: linear-gradient(180deg, #fef8fa, #ffffff);
+    border: 1.5px solid #f3c9dd; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(217,112,157,0.08);
+  }
+  .sched-exc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sched-exc-note { flex: 1; min-width: 180px; padding: 8px 12px; border: 1.5px solid #eec3d7; border-radius: 8px; font-family: inherit; font-size: 0.92rem; font-weight: 600; color: #9c3f68; background: #fff5f9; }
+  .sched-exc-note::placeholder { font-weight: normal; color: #d199b5; }
+
+  .sched-field-grid { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .sched-field { display: flex; flex-direction: column; gap: 4px; }
+  .sched-field label { font-size: 0.72rem; font-weight: 700; color: #888; }
+  .sched-field input, .sched-field select {
+    padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-family: inherit; font-size: 0.88rem; background: white;
+  }
+  .sched-field input:focus, .sched-field select:focus { outline: none; border-color: #90caf9; }
+
+  .sched-day-chips { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sched-day-chip {
+    display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+    border-radius: 50%; border: 1.5px solid #e0e0e0; background: white; color: #999;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  }
+  .sched-day-chip input { display: none; }
+  .sched-day-chip:has(input:checked) { background: #1565c0; border-color: #1565c0; color: white; }
+
+  /* ── תיבת הסבבים ── */
+  .sched-slots-box { background: #f7f9fc; border-radius: 10px; padding: 10px; }
+  .sched-slots { display: flex; flex-direction: column; gap: 10px; }
+
+  .sched-slot-row {
+    display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+    background: white; border: 1.5px solid #eef1f5; border-radius: 10px; padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .sched-slot-name input { width: 120px; }
+  .sched-slot-period input { width: 90px; }
+  .sched-slot-reserve { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #6d5429; white-space: nowrap; }
+  .sched-slot-reserve .sched-checkbox-line { display: flex; align-items: center; gap: 5px; height: 33px; }
+  .sched-mini-btn {
+    background: white; color: #1565c0; border: 1.5px solid #90caf9; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .sched-mini-btn:hover { background: #e3f2fd; }
+  .sched-remove-btn {
+    background: none; border: 1.5px solid #ef9a9a; border-radius: 8px; color: #c62828; cursor: pointer;
+    padding: 0 11px; height: 33px; font-size: 0.9rem; margin-right: auto; align-self: flex-end; transition: all 0.15s;
+  }
+  .sched-remove-btn:hover { background: #fce4ec; }
+  .sched-remove-btn.sched-remove-exc { align-self: center; margin-right: 0; height: auto; padding: 7px 14px; font-size: 0.82rem; font-weight: 600; }
+  .sched-empty { color: #aaa; font-size: 0.85rem; padding: 8px 2px; }
+
+  /* ── עורך הבאנר ── */
+  .sched-banner-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .sched-emoji-picker { display: flex; gap: 4px; flex-wrap: wrap; background: #f7f9fc; border-radius: 10px; padding: 6px 8px; }
+  .sched-emoji-btn {
+    background: none; border: none; font-size: 1.15rem; cursor: pointer; border-radius: 6px; padding: 2px 5px; line-height: 1; transition: background 0.15s;
+  }
+  .sched-emoji-btn:hover { background: #e3f2fd; }
+  #schedBannerHtml {
+    padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 10px; line-height: 1.7;
+    min-height: 140px; direction: rtl; text-align: right; font-size: 0.95rem; color: #333;
+  }
+  #schedBannerHtml:focus { outline: none; border-color: #90caf9; }
+  #schedBannerHtml:empty::before { content: attr(data-placeholder); color: #aaa; }
+  #schedBannerHtml strong { color: #1f8a7a; }
+
+  @media (max-width: 600px) {
+    .hours-grid-preview { grid-template-columns: 1fr; }
+    .sched-slot-row { align-items: stretch; }
+    .sched-slot-row .sched-field input { width: 100%; }
+    .sched-remove-btn { margin-right: 0; align-self: stretch; height: 36px; }
+  }
   </style>
 </head>
 <body>
@@ -698,6 +839,7 @@
     <button class="topbar-btn active" id="btnAdmin" onclick="switchView('admin')">📋 תצוגת מנהל</button>
     <button class="topbar-btn" id="btnManager" onclick="switchView('manager')">📊 דשבורד מנהלים</button>
     <button class="topbar-btn" id="btnBrief" onclick="switchView('brief')">📈 תצוגה מקוצרת</button>
+    <button class="topbar-btn" id="btnSchedule" onclick="switchView('schedule')">⚙️ שעות פעילות</button>
     <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
     <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()" title="קובץ Excel של נרשמי המילואים לשבוע הנוכחי">🎖️ ייצוא מילואים לאקסל</button>
     <button class="export-btn reserve-export" id="btnPdfReserve" onclick="exportReservePDF()" title="רשימה מעוצבת להדפסה/שמירה כ-PDF">🖨️ PDF מילואים</button>
@@ -802,6 +944,64 @@
 
   <div style="text-align:center;color:#bbb;font-size:0.78rem;margin-top:10px;margin-bottom:20px">
     עודכן: <span id="briefLastUpdate"></span>
+  </div>
+</div>
+
+<!-- ===================== SCHEDULE EDITOR VIEW ===================== -->
+<div id="scheduleScreen" style="display:none">
+
+  <div class="mgr-hero">
+    <h2>⚙️ שעות פעילות — עריכה</h2>
+    <div class="mgr-date">שינויים כאן משפיעים על אתר הרישום לתושבים ועל דף הניהול, מיד לאחר שמירה</div>
+  </div>
+
+  <div class="dashboard-section sched-section-preview">
+    <h2>👁️ תצוגה מקדימה לתושבים — 14 הימים הקרובים</h2>
+    <div class="sched-preview-box">
+      <div id="schedPreviewBanner"></div>
+      <div class="hours-grid-preview" id="schedPreviewHours"></div>
+    </div>
+  </div>
+
+  <div class="dashboard-section sched-section-weekly">
+    <h2>📅 תבנית שבועית קבועה</h2>
+    <div class="sched-hint">מה קורה בכל יום בשגרה, כשאין חריג פעיל. שינוי כאן ישפיע על כל השבועות, גם העתידיים.</div>
+    <div id="schedWeekly"></div>
+  </div>
+
+  <div class="dashboard-section sched-section-exceptions">
+    <h2>🔀 חריגים (שינויים לטווח תאריכים)</h2>
+    <div class="sched-hint">שינוי חד-פעמי או זמני לתאריכים מסוימים, כמו סבבי הבוקר הנוכחיים — מבלי לגעת בתבנית הקבועה.</div>
+    <div id="schedExceptions"></div>
+    <button class="sched-mini-btn" onclick="addException()" style="margin-top:6px">+ חריג חדש</button>
+  </div>
+
+  <div class="dashboard-section sched-section-banner">
+    <h2>📢 באנר לתושבים</h2>
+    <label style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:0.9rem;font-weight:600">
+      <input type="checkbox" id="schedBannerEnabled" onchange="onScheduleFieldChange()" /> להציג באנר בדף הרישום
+    </label>
+    <div class="sched-banner-toolbar">
+      <button type="button" class="sched-mini-btn" onmousedown="event.preventDefault()" onclick="wrapBannerSelection('strong')"><b>B</b>&nbsp;הדגשה</button>
+      <button type="button" class="sched-mini-btn" onmousedown="event.preventDefault()" onclick="insertBannerLineBreak()">↵ שורה חדשה</button>
+      <div class="sched-emoji-picker" id="schedEmojiPicker"></div>
+    </div>
+    <div id="schedBannerHtml" contenteditable="true" oninput="onScheduleFieldChange()" onkeydown="handleBannerKeydown(event)" data-placeholder="טקסט הבאנר. סמנו קטע ולחצו הדגשה, או הוסיפו אימוג׳י מהרשימה למעלה"></div>
+    <div class="sched-hint" style="margin-top:8px;margin-bottom:0">מה שרואים כאן זה בדיוק איך זה ייראה — בלי תגי קוד. התצוגה המקדימה למעלה מציגה גם את הרקע והצבעים האמיתיים.</div>
+  </div>
+
+  <div class="dashboard-section sched-section-general">
+    <h2>⚙️ הגדרות כלליות</h2>
+    <div class="sched-field" style="max-width:220px">
+      <label>קיבולת ברירת מחדל לסבב (מספר אנשים, כולל הורים)</label>
+      <input type="number" id="schedCapacity" min="1" onchange="onScheduleFieldChange()" />
+    </div>
+  </div>
+
+  <div id="schedMsg" class="msg" style="margin-bottom:14px"></div>
+  <div style="display:flex;gap:10px;margin-bottom:30px;flex-wrap:wrap">
+    <button class="submit-btn" style="flex:1 1 200px" onclick="saveSchedule()">💾 שמור שינויים</button>
+    <button class="back-btn" onclick="loadScheduleEditor()">↩️ בטל שינויים / רענן</button>
   </div>
 </div>
 
@@ -955,7 +1155,7 @@
 
   function showLogin(msg) {
     setToken(null);
-    ['mainScreen','managerScreen','briefScreen'].forEach(id => document.getElementById(id).style.display = 'none');
+    ['mainScreen','managerScreen','briefScreen','scheduleScreen'].forEach(id => document.getElementById(id).style.display = 'none');
     document.getElementById('topbarActions').style.display = 'none';
     document.getElementById('userName').textContent = '';
     document.getElementById('loginScreen').style.display = '';
@@ -1010,15 +1210,18 @@
   // ── view switch ───────────────────────────────────────────
   function switchView(v) {
     currentView = v;
-    document.getElementById('mainScreen').style.display    = v === 'admin'   ? 'block' : 'none';
-    document.getElementById('managerScreen').style.display = v === 'manager' ? 'block' : 'none';
-    document.getElementById('briefScreen').style.display   = v === 'brief'   ? 'block' : 'none';
-    document.getElementById('btnAdmin').classList.toggle('active',   v === 'admin');
-    document.getElementById('btnManager').classList.toggle('active', v === 'manager');
+    document.getElementById('mainScreen').style.display     = v === 'admin'    ? 'block' : 'none';
+    document.getElementById('managerScreen').style.display  = v === 'manager'  ? 'block' : 'none';
+    document.getElementById('briefScreen').style.display    = v === 'brief'    ? 'block' : 'none';
+    document.getElementById('scheduleScreen').style.display = v === 'schedule' ? 'block' : 'none';
+    document.getElementById('btnAdmin').classList.toggle('active',    v === 'admin');
+    document.getElementById('btnManager').classList.toggle('active',  v === 'manager');
     document.getElementById('btnBrief').classList.toggle('active',   v === 'brief');
+    document.getElementById('btnSchedule').classList.toggle('active', v === 'schedule');
     document.getElementById('btnPdf').style.display = v === 'manager' ? 'inline-block' : 'none';
     if (v === 'manager') renderManager();
     if (v === 'brief') renderBrief();
+    if (v === 'schedule') loadScheduleEditor();
   }
 
   // ── data ──────────────────────────────────────────────────
@@ -1736,7 +1939,7 @@
     renderBriefChart(allDates);
   }
 
-  // Auto-refresh every 60s
+  // Auto-refresh every 60s (לא כולל מסך עריכת השעות — כדי לא לדרוס עריכה באמצע)
   setInterval(() => {
     if (document.getElementById('mainScreen').style.display !== 'none' ||
         document.getElementById('managerScreen').style.display !== 'none' ||
@@ -1744,6 +1947,436 @@
       loadData();
     }
   }, 60000);
+
+  // ═══════════════ מסך עריכת שעות פעילות ═══════════════
+  let scheduleDraft = null; // עותק עבודה נפרד מ-scheduleData — לא נשלח לשרת עד לחיצה על "שמור"
+  const DAY_NAMES_FULL = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
+
+  async function loadScheduleEditor() {
+    const msg = document.getElementById('schedMsg');
+    msg.className = 'msg'; msg.textContent = '';
+    try {
+      const res = await authFetch('/api/admin/schedule');
+      scheduleDraft = await res.json();
+      renderScheduleEditor();
+    } catch (e) {
+      if (e.message !== 'unauthorized') {
+        msg.className = 'msg show error';
+        msg.textContent = 'שגיאה בטעינת ההגדרות. נסה לרענן.';
+      }
+    }
+  }
+
+  function renderScheduleEditor() {
+    renderWeeklyEditor();
+    renderExceptionsEditor();
+    renderEmojiPicker();
+    document.getElementById('schedBannerEnabled').checked = !!scheduleDraft.banner?.enabled;
+    document.getElementById('schedBannerHtml').innerHTML = scheduleDraft.banner?.html || '';
+    document.getElementById('schedCapacity').value = scheduleDraft.capacityDefault || 30;
+    renderPreview();
+  }
+
+  // ── עריכת סבבים (משותף לתבנית השבועית ולחריגים) ──
+  function getSlotArray(scope, key) {
+    return scope === 'weekly' ? (scheduleDraft.weeklyTemplate[key] || (scheduleDraft.weeklyTemplate[key] = []))
+                               : scheduleDraft.exceptions[key].slots;
+  }
+
+  function renderSlotRow(scope, key, index, slot) {
+    const [startT, endT] = String(slot.label || '').split('–');
+    return `
+      <div class="sched-slot-row">
+        <div class="sched-field">
+          <label>משעה</label>
+          <input type="time" value="${startT || ''}" onchange="updateSlotTime('${scope}',${key},${index},'start',this.value)" />
+        </div>
+        <div class="sched-field">
+          <label>עד שעה</label>
+          <input type="time" value="${endT || ''}" onchange="updateSlotTime('${scope}',${key},${index},'end',this.value)" />
+        </div>
+        <div class="sched-field sched-slot-name">
+          <label>שם הסבב</label>
+          <input type="text" value="${slot.display || ''}" placeholder="סבב א׳" oninput="updateSlotField('${scope}',${key},${index},'display',this.value)" />
+        </div>
+        <div class="sched-field sched-slot-period">
+          <label>תקופה (לתצוגה)</label>
+          <input type="text" value="${slot.period || ''}" placeholder="בוקר / אחה&quot;צ" oninput="updateSlotField('${scope}',${key},${index},'period',this.value)" />
+        </div>
+        <div class="sched-slot-reserve">
+          <span>&nbsp;</span>
+          <label class="sched-checkbox-line"><input type="checkbox" ${slot.reserveOnly ? 'checked' : ''} onchange="updateSlotField('${scope}',${key},${index},'reserveOnly',this.checked)" /> מילואים בלבד</label>
+        </div>
+        <button class="sched-remove-btn" onclick="removeSlot('${scope}',${key},${index})" title="מחק סבב">✕</button>
+      </div>`;
+  }
+
+  function updateSlotTime(scope, key, index, part, value) {
+    const s = getSlotArray(scope, key)[index];
+    const [start, end] = String(s.label || '00:00–00:00').split('–');
+    s.label = part === 'start' ? `${value}–${end || '00:00'}` : `${start || '00:00'}–${value}`;
+    renderPreview();
+  }
+
+  function updateSlotField(scope, key, index, field, value) {
+    getSlotArray(scope, key)[index][field] = value;
+    renderPreview();
+  }
+
+  function removeSlot(scope, key, index) {
+    getSlotArray(scope, key).splice(index, 1);
+    if (scope === 'weekly') renderWeeklyEditor(); else renderExceptionsEditor();
+    renderPreview();
+  }
+
+  function newSlotId() { return 'slot' + Date.now() + Math.floor(Math.random() * 1000); }
+
+  function addWeeklySlot(day) {
+    const arr = getSlotArray('weekly', day);
+    arr.push({ id: newSlotId(), label: '16:00–17:30', display: 'סבב ' + (arr.length + 1) });
+    renderWeeklyEditor();
+    renderPreview();
+  }
+
+  function copyDayTemplate(fromDay, toDay) {
+    if (!confirm(`להעתיק את סבבי יום ${DAY_NAMES_FULL[fromDay]} ליום ${DAY_NAMES_FULL[toDay]}? זה ידרוס את הסבבים הקיימים ביום ${DAY_NAMES_FULL[toDay]} בתבנית הקבועה.`)) return;
+    scheduleDraft.weeklyTemplate[toDay] = JSON.parse(JSON.stringify(scheduleDraft.weeklyTemplate[fromDay] || []));
+    renderWeeklyEditor();
+    renderPreview();
+  }
+
+  function renderWeeklyEditor() {
+    document.getElementById('schedWeekly').innerHTML = [0, 1, 2, 3, 4].map(day => {
+      const slots = scheduleDraft.weeklyTemplate[day] || [];
+      const closed = !slots.length;
+      return `
+        <div class="sched-day-card ${closed ? 'sched-day-closed' : ''}">
+          <div class="sched-day-header">
+            <div class="sched-day-title">
+              <strong>יום ${DAY_NAMES_FULL[day]}</strong>
+              <span class="sched-day-badge ${closed ? 'closed' : ''}">${closed ? 'סגור' : slots.length === 1 ? '1 סבב' : slots.length + ' סבבים'}</span>
+            </div>
+            <div class="sched-day-actions">
+              <button class="sched-mini-btn" onclick="addWeeklySlot(${day})">+ סבב</button>
+              <select onchange="if(this.value!=='')copyDayTemplate(${day},Number(this.value));this.value=''">
+                <option value="">העתק ל...</option>
+                ${[0, 1, 2, 3, 4].filter(d => d !== day).map(d => `<option value="${d}">יום ${DAY_NAMES_FULL[d]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="sched-slots-box">
+            <div class="sched-slots">
+              ${slots.map((s, i) => renderSlotRow('weekly', day, i, s)).join('') || '<div class="sched-empty">אין סבבים ביום זה — המשחקייה סגורה</div>'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── חריגים ──
+  function addException() {
+    const today = new Date().toISOString().split('T')[0];
+    scheduleDraft.exceptions.push({ id: 'exc' + Date.now(), startDate: today, endDate: null, days: [0, 1, 2, 3, 4], type: 'add', slots: [], note: '' });
+    renderExceptionsEditor();
+    renderPreview();
+  }
+
+  function removeException(exIdx) {
+    if (!confirm('למחוק את החריג הזה?')) return;
+    scheduleDraft.exceptions.splice(exIdx, 1);
+    renderExceptionsEditor();
+    renderPreview();
+  }
+
+  function updateExceptionField(exIdx, field, value) {
+    scheduleDraft.exceptions[exIdx][field] = value;
+    if (field === 'type') renderExceptionsEditor();
+    renderPreview();
+  }
+
+  function toggleExceptionDay(exIdx, day, checked) {
+    const ex = scheduleDraft.exceptions[exIdx];
+    ex.days = ex.days || [];
+    if (checked && !ex.days.includes(day)) ex.days.push(day);
+    if (!checked) ex.days = ex.days.filter(d => d !== day);
+    ex.days.sort((a, b) => a - b);
+    renderPreview();
+  }
+
+  function addExceptionSlot(exIdx) {
+    const ex = scheduleDraft.exceptions[exIdx];
+    ex.slots = ex.slots || [];
+    ex.slots.push({ id: newSlotId(), label: '16:00–17:30', display: 'סבב ' + (ex.slots.length + 1) });
+    renderExceptionsEditor();
+    renderPreview();
+  }
+
+  function renderExceptionsEditor() {
+    document.getElementById('schedExceptions').innerHTML = (scheduleDraft.exceptions || []).map((ex, exIdx) => `
+      <div class="sched-exc-card">
+        <div class="sched-exc-header">
+          <input type="text" class="sched-exc-note" value="${ex.note || ''}" placeholder="✏️ תיאור פנימי (לדוגמה: סבבי בוקר)" oninput="updateExceptionField(${exIdx},'note',this.value)" />
+        </div>
+        <div class="sched-field-grid">
+          <div class="sched-field">
+            <label>מתאריך</label>
+            <input type="date" value="${ex.startDate || ''}" onchange="updateExceptionField(${exIdx},'startDate',this.value)" />
+          </div>
+          <div class="sched-field">
+            <label>עד תאריך (ריק = ללא הגבלה)</label>
+            <input type="date" value="${ex.endDate || ''}" onchange="updateExceptionField(${exIdx},'endDate',this.value || null)" />
+          </div>
+          <div class="sched-field">
+            <label>סוג החריג</label>
+            <select onchange="updateExceptionField(${exIdx},'type',this.value)">
+              <option value="add" ${ex.type === 'add' ? 'selected' : ''}>הוספה (מעל התבנית הקבועה)</option>
+              <option value="replace" ${ex.type === 'replace' ? 'selected' : ''}>החלפה (במקום התבנית הקבועה)</option>
+              <option value="closed" ${ex.type === 'closed' ? 'selected' : ''}>סגור (אין סבבים)</option>
+            </select>
+          </div>
+        </div>
+        <div class="sched-day-chips">
+          ${[0, 1, 2, 3, 4].map(d => `
+            <label class="sched-day-chip" title="יום ${DAY_NAMES_FULL[d]}">
+              <input type="checkbox" ${(ex.days || []).includes(d) ? 'checked' : ''} onchange="toggleExceptionDay(${exIdx},${d},this.checked)" />
+              ${DAY_LETTERS_PREVIEW[d]}
+            </label>`).join('')}
+        </div>
+        ${ex.type !== 'closed' ? `
+          <div class="sched-slots-box">
+            <div class="sched-slots">
+              ${(ex.slots || []).map((s, i) => renderSlotRow('exception', exIdx, i, s)).join('') || '<div class="sched-empty">אין סבבים</div>'}
+            </div>
+            <button class="sched-mini-btn" style="margin-top:10px" onclick="addExceptionSlot(${exIdx})">+ סבב</button>
+          </div>
+        ` : ''}
+        <div style="text-align:center;margin-top:12px">
+          <button class="sched-remove-btn sched-remove-exc" onclick="removeException(${exIdx})">✕ מחק חריג זה</button>
+        </div>
+      </div>
+    `).join('') || '<div class="sched-empty">אין חריגים כרגע — כל הימים פועלים לפי התבנית השבועית הקבועה</div>';
+  }
+
+  function onScheduleFieldChange() {
+    scheduleDraft.banner = scheduleDraft.banner || {};
+    scheduleDraft.banner.enabled = document.getElementById('schedBannerEnabled').checked;
+    scheduleDraft.banner.html = document.getElementById('schedBannerHtml').innerHTML;
+    scheduleDraft.capacityDefault = Number(document.getElementById('schedCapacity').value) || 30;
+    renderPreview();
+  }
+
+  // ── כלי עריכת הבאנר: תיבה שמציגה עיצוב אמיתי (contenteditable), בלי תגי HTML גלויים ──
+  const BANNER_EMOJIS = ['🍂','📢','📞','⏰','📅','✅','⚠️','🎉','👶','🧒','☀️','🌆','🎖️','📍','🔔','❗','🧦','🎒'];
+
+  function renderEmojiPicker() {
+    document.getElementById('schedEmojiPicker').innerHTML = BANNER_EMOJIS
+      .map(e => `<button type="button" class="sched-emoji-btn" onmousedown="event.preventDefault()" onclick="insertBannerEmoji('${e}')" title="הוסף ${e}">${e}</button>`)
+      .join('');
+  }
+
+  // מחזיר טווח עריכה (Range) בתוך תיבת הבאנר — אם אין בחירה פעילה בתוכה, ממקם את הסמן בסופה
+  function getBannerRange() {
+    const editor = document.getElementById('schedBannerHtml');
+    const sel = window.getSelection();
+    if (sel.rangeCount && editor.contains(sel.anchorNode)) return sel.getRangeAt(0);
+    editor.focus();
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return range;
+  }
+
+  function setBannerCaretAfter(node) {
+    const range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  // מסמנים טקסט ולוחצים "הדגשה" — עוטף אותו ב-<strong> אמיתי (לא טקסט של תגיות). בלי בחירה — מוסיף מילות דוגמה מודגשות בסמן.
+  function wrapBannerSelection(tag) {
+    const range = getBannerRange();
+    const el = document.createElement(tag);
+    if (range.collapsed) {
+      el.textContent = 'טקסט מודגש';
+      range.insertNode(el);
+    } else {
+      el.appendChild(range.extractContents());
+      range.insertNode(el);
+    }
+    setBannerCaretAfter(el);
+    onScheduleFieldChange();
+  }
+
+  function insertBannerLineBreak() {
+    const range = getBannerRange();
+    range.deleteContents();
+    const br = document.createElement('br');
+    range.insertNode(br);
+    setBannerCaretAfter(br);
+    onScheduleFieldChange();
+  }
+
+  function insertBannerEmoji(emoji) {
+    const range = getBannerRange();
+    range.deleteContents();
+    const node = document.createTextNode(emoji + ' ');
+    range.insertNode(node);
+    setBannerCaretAfter(node);
+    onScheduleFieldChange();
+  }
+
+  // Enter בתוך תיבת הבאנר מכניס <br> נקי, במקום שהדפדפן יעטוף כל שורה ב-<div> משלה
+  function handleBannerKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      insertBannerLineBreak();
+    }
+  }
+
+  // ── תצוגה מקדימה — אותה לוגיקה בדיוק כמו index.html, על 14 הימים הקרובים ──
+  const DAY_LETTERS_PREVIEW = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳'];
+
+  function formatDayRangePreview(days) {
+    if (days.length === 1) return DAY_LETTERS_PREVIEW[days[0]];
+    const contiguous = days.every((d, i) => i === 0 || d === days[i - 1] + 1);
+    return contiguous ? `${DAY_LETTERS_PREVIEW[days[0]]}–${DAY_LETTERS_PREVIEW[days[days.length - 1]]}` : days.map(d => DAY_LETTERS_PREVIEW[d]).join(' + ');
+  }
+
+  function slotSigPreview(slots) {
+    return JSON.stringify(slots.map(s => ({ label: s.label, display: s.display, reserveOnly: !!s.reserveOnly, period: s.period || null })));
+  }
+
+  function buildHourCardsPreview(settings, range) {
+    const days = [];
+    for (let d = new Date(range.start + 'T12:00:00'); d.toISOString().split('T')[0] <= range.end; d.setDate(d.getDate() + 1)) {
+      const dow = d.getDay();
+      if (dow !== 5 && dow !== 6) days.push({ date: d.toISOString().split('T')[0], dow });
+    }
+    if (!days.length) return [];
+
+    const overriddenDows = new Set();
+    const exceptionCards = [];
+    (settings.exceptions || []).forEach(ex => {
+      const applicableDows = new Set();
+      days.forEach(({ date, dow }) => {
+        if (date < ex.startDate) return;
+        if (ex.endDate && date > ex.endDate) return;
+        if (ex.days && !ex.days.includes(dow)) return;
+        applicableDows.add(dow);
+      });
+      if (!applicableDows.size) return;
+      const dowList = [...applicableDows].sort((a, b) => a - b);
+      if (ex.type === 'closed') dowList.forEach(d => overriddenDows.add(d));
+      else if (ex.type === 'replace') { dowList.forEach(d => overriddenDows.add(d)); exceptionCards.push({ days: dowList, slots: ex.slots || [], isNew: ex.startDate >= range.start, startDate: ex.startDate, fromException: true }); }
+      else if (ex.type === 'add') exceptionCards.push({ days: dowList, slots: ex.slots || [], isNew: ex.startDate >= range.start, startDate: ex.startDate, fromException: true });
+    });
+
+    const baseGroups = new Map();
+    days.forEach(({ dow }) => {
+      if (overriddenDows.has(dow)) return;
+      const slots = settings.weeklyTemplate[dow] || [];
+      if (!slots.length) return;
+      const sig = slotSigPreview(slots);
+      if (!baseGroups.has(sig)) baseGroups.set(sig, { days: new Set(), slots });
+      baseGroups.get(sig).days.add(dow);
+    });
+
+    const cards = [];
+    baseGroups.forEach(g => cards.push({ days: [...g.days].sort((a, b) => a - b), slots: g.slots, fromException: false }));
+    const mergeMap = new Map();
+    exceptionCards.forEach(c => { const key = c.days.join(',') + '|' + slotSigPreview(c.slots); if (!mergeMap.has(key)) mergeMap.set(key, c); });
+    mergeMap.forEach(c => cards.push(c));
+    return cards;
+  }
+
+  function cardSubtitlePreview(card) {
+    const countLabel = card.slots.length > 1 ? 'שני סבבים' : 'סבב יחיד';
+    if (card.slots.length === 1 && card.slots[0].reserveOnly) return `מילואים בלבד, ${countLabel}`;
+    const period = card.slots[0]?.period;
+    return period ? `${period}, ${countLabel}` : countLabel;
+  }
+
+  function formatShortDatePreview(dateStr) { const [, m, d] = dateStr.split('-'); return `${d}.${m}`; }
+
+  function renderPreview() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const start = today.toISOString().split('T')[0];
+    const endDate = new Date(today); endDate.setDate(endDate.getDate() + 13);
+    const range = { start, end: endDate.toISOString().split('T')[0] };
+
+    const b = scheduleDraft.banner;
+    document.getElementById('schedPreviewBanner').innerHTML = (b && b.enabled && b.html)
+      ? `<div class="vacation-notice-preview">${b.html}</div>`
+      : '<div class="sched-empty">(הבאנר כבוי — לא יוצג לתושבים)</div>';
+
+    const cards = buildHourCardsPreview(scheduleDraft, range);
+    document.getElementById('schedPreviewHours').innerHTML = cards.length ? cards.map(card => {
+      const isReserve = card.slots.length === 1 && card.slots[0].reserveOnly;
+      const newTag = card.isNew && card.startDate ? ` (מ-${formatShortDatePreview(card.startDate)})` : '';
+      const style = card.fromException ? 'grid-column:1/-1' : '';
+      return `<div class="hour-card ${isReserve ? 'reserve' : ''}" style="${style}">
+        <strong>${formatDayRangePreview(card.days)}${newTag} — ${cardSubtitlePreview(card)}</strong>
+        ${card.slots.map(s => s.label).join(' | ')}
+      </div>`;
+    }).join('') : '<div class="sched-empty" style="grid-column:1/-1">אין שעות פעילות מוגדרות בטווח זה</div>';
+  }
+
+  // ── שמירה ──
+  async function saveSchedule() {
+    const msg = document.getElementById('schedMsg');
+    msg.className = 'msg'; msg.textContent = '';
+    const btn = document.querySelector('#scheduleScreen .submit-btn');
+    btn.disabled = true;
+
+    async function attempt(force) {
+      const url = '/api/admin/schedule' + (force ? '?force=true' : '');
+      const res = await authFetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scheduleDraft)
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        msg.className = 'msg show success';
+        msg.textContent = '✅ השעות נשמרו בהצלחה';
+        scheduleData = scheduleDraft; // מרענן את המקור המשותף לשאר המסכים
+        return true;
+      }
+
+      if (res.status === 400) {
+        msg.className = 'msg show error';
+        msg.textContent = '⚠️ ' + (data.error || 'שגיאה') + (data.details ? ': ' + data.details.join(' | ') : '');
+        return false;
+      }
+
+      if (res.status === 409 && data.conflicts?.length) {
+        const list = data.conflicts.map(c => `• ${hebrewDate(c.date)} (${hebrewDay(c.date)}) — ${c.families} משפחות, ${c.people} אנשים`).join('\n');
+        const proceed = confirm(
+          `יש נרשמים בסבבים שהעריכה הזו מוחקת:\n\n${list}\n\n` +
+          `אם תמשיך, הרישומים האלה יישארו במערכת אך יוצגו כרישום לסבב שכבר לא קיים בלוח השעות. ` +
+          `לשקול לשמר את הסבב (רק לשנות שעה/שם) במקום למחוק אותו.\n\nלשמור בכל זאת?`
+        );
+        if (proceed) return attempt(true);
+        msg.className = 'msg show warning';
+        msg.textContent = 'השמירה בוטלה — יש נרשמים בסבבים שנמחקו';
+        return false;
+      }
+
+      msg.className = 'msg show error';
+      msg.textContent = 'שגיאה בשמירה: ' + (data.error || res.status);
+      return false;
+    }
+
+    try { await attempt(false); }
+    catch (e) { if (e.message !== 'unauthorized') { msg.className = 'msg show error'; msg.textContent = 'שגיאת תקשורת, נסה שוב'; } }
+    finally { btn.disabled = false; }
+  }
 </script>
 </body>
 </html>
