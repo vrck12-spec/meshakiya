@@ -2054,6 +2054,11 @@
                                : scheduleDraft.exceptions[key].slots;
   }
 
+  // בורח מרכאות (ותווים אחרים) כדי שערך עם " (למשל 'אחה"צ') לא יסגור את מאפיין ה-HTML באמצע ויקטע את הטקסט
+  function escAttr(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
   function renderSlotRow(scope, key, index, slot) {
     const [startT, endT] = String(slot.label || '').split('–');
     return `
@@ -2068,11 +2073,11 @@
         </div>
         <div class="sched-field sched-slot-name">
           <label>שם הסבב</label>
-          <input type="text" value="${slot.display || ''}" placeholder="סבב א׳" oninput="updateSlotField('${scope}',${key},${index},'display',this.value)" />
+          <input type="text" value="${escAttr(slot.display)}" placeholder="סבב א׳" oninput="updateSlotField('${scope}',${key},${index},'display',this.value)" />
         </div>
         <div class="sched-field sched-slot-period">
           <label>תקופה (לתצוגה)</label>
-          <input type="text" value="${slot.period || ''}" placeholder="בוקר / אחה&quot;צ" oninput="updateSlotField('${scope}',${key},${index},'period',this.value)" />
+          <input type="text" value="${escAttr(slot.period)}" placeholder="בוקר / אחה&quot;צ" oninput="updateSlotField('${scope}',${key},${index},'period',this.value)" />
         </div>
         <div class="sched-slot-reserve">
           <span>&nbsp;</span>
@@ -2186,7 +2191,7 @@
     document.getElementById('schedExceptions').innerHTML = (scheduleDraft.exceptions || []).map((ex, exIdx) => `
       <div class="sched-exc-card">
         <div class="sched-exc-header">
-          <input type="text" class="sched-exc-note" value="${ex.note || ''}" placeholder="✏️ תיאור פנימי (לדוגמה: סבבי בוקר)" oninput="updateExceptionField(${exIdx},'note',this.value)" />
+          <input type="text" class="sched-exc-note" value="${escAttr(ex.note)}" placeholder="✏️ תיאור פנימי (לדוגמה: סבבי בוקר)" oninput="updateExceptionField(${exIdx},'note',this.value)" />
         </div>
         <div class="sched-field-grid">
           <div class="sched-field">
