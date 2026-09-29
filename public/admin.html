@@ -900,6 +900,7 @@
   </div>
 
   <!-- Stats Cards -->
+  <div id="statsWeekLabel" style="text-align:center;font-size:0.82rem;color:#888;margin-bottom:8px"></div>
   <div class="stats-grid" id="statsGrid"></div>
 
   <!-- Capacity Map -->
@@ -1218,6 +1219,14 @@
   }
 
   // ── date filter: today − 5 days to future ────────────────
+  // השבוע הנוכחי (ראשון–שבת) — נגזר מתאריך הרישום הפתוח האחרון (/api/dates), כמו בשרת: אחרי חמישי 19:45
+  // הרישום עובר לשבוע הבא. אם אין תאריכים פתוחים — השבוע של היום בישראל
+  function currentWeekRange() {
+    const ref = allEventDates.length ? allEventDates[allEventDates.length - 1] : todayIsraelStr();
+    const start = addDaysStr(ref, -new Date(ref + 'T12:00:00').getDay());
+    return { from: start, to: addDaysStr(start, 6) };
+  }
+
   function getVisibleDates(allDates) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1364,10 +1373,15 @@
     let totalCapacity = 0, fullSlots = 0, almostSlots = 0;
     const allSlots = [];
 
-    // compute totals from ALL data (not just visible) — עובר על כל הסבבים הצפויים ליום, כולל
-    // כאלה שעדיין אין בהם אף רישום, כדי שהקיבולת הכוללת תשקף את כל החלונות הפתוחים ולא רק מאוכלסים
-    allDates.forEach(date => {
-      expectedSlotsForDate(date).forEach(slotId => {
+    // כרטיסי הסטטיסטיקה מציגים רק את השבוע הנוכחי (א׳–ש׳). עובר על כל הסבבים הצפויים ליום, כולל
+    // כאלה שעדיין אין בהם אף רישום, כדי שהקיבולת תשקף את כל החלונות הפתוחים ולא רק מאוכלסים;
+    // וגם על סבבים שיש בהם רישומים אך אינם בלוח הנוכחי, כדי שלא ידלגו על רישומים קיימים
+    const week = currentWeekRange();
+    document.getElementById('statsWeekLabel').textContent =
+      `השבוע הנוכחי: ${hebrewDate(week.from)} – ${hebrewDate(week.to)}`;
+    allDates.filter(d => d >= week.from && d <= week.to).forEach(date => {
+      const slotIds = [...new Set([...expectedSlotsForDate(date), ...Object.keys(allData[date] || {})])];
+      slotIds.forEach(slotId => {
         const regs = (allData[date] || {})[slotId] || [];
         const people = countPeople(regs);
         totalPeople   += people;
