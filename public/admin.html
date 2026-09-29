@@ -812,6 +812,7 @@
   let allData = {};
   let allEventDates = []; // כל תאריכי האירוע (כולל ריקים)
   let currentView = 'admin';
+  let scheduleData = null; // מ-/api/schedule — תבנית שבועית + חריגים, מקור יחיד לשעות (כמו ב-index.html)
 
   // ── helpers ──────────────────────────────────────────────
   function countPeople(regs) {
@@ -832,39 +833,78 @@
     return `${d}/${m}/${y}`;
   }
 
-  function slotLabel(slotId) {
-    const labels = {
-      morning1: '☀️ בוקר א׳ 09:00–11:30',
-      morning2: '☀️ בוקר ב׳ 11:30–14:00',
-      noon1: '🌞 צהריים א׳ 12:00–14:00',
-      noon2: '🌞 צהריים ב׳ 14:00–16:00',
-      evening1: '🌤️ סבב א׳ 16:00–18:00',
-      evening2: '🌙 סבב ב׳ 18:00–20:00',
-      afternoon: '🌆 סשן יחיד 16:00–18:00',
-      afternoon1: '🌆 סבב א׳ 16:00–17:30',
-      afternoon2: '🌆 סבב ב׳ 17:30–19:00',
-      reserve: '🎖️ מילואים 16:00–19:00',
-      reserveWed: '🎖️ מילואים 18:00 ואילך',
-    };
-    return labels[slotId] || slotId;
+  // מחשב את הסבבים לתאריך נתון לפי תבנית שבועית + חריגים — זהה ללוגיקה בשרת (server.js: computeSlotsForDate)
+  function computeSlotsForDateClient(dateStr, settings) {
+    const day = new Date(dateStr + 'T12:00:00').getDay();
+    if (day === 5 || day === 6) return [];
+    let slots = (settings.weeklyTemplate[day] || []).map(s => ({ ...s }));
+    for (const ex of settings.exceptions || []) {
+      if (dateStr < ex.startDate) continue;
+      if (ex.endDate && dateStr > ex.endDate) continue;
+      if (ex.days && !ex.days.includes(day)) continue;
+      if (ex.type === 'closed') slots = [];
+      else if (ex.type === 'replace') slots = (ex.slots || []).map(s => ({ ...s }));
+      else if (ex.type === 'add') slots = [...(ex.slots || []).map(s => ({ ...s })), ...slots];
+    }
+    return slots;
   }
 
-  function slotShort(slotId) {
-    const m = { morning1:'בוקר א׳', morning2:'בוקר ב׳', noon1:'צהריים א׳', noon2:'צהריים ב׳', evening1:'סבב א׳', evening2:'סבב ב׳', afternoon:'סשן יחיד', afternoon1:'סבב א׳', afternoon2:'סבב ב׳', reserve:'מילואים', reserveWed:'מילואים' };
-    return m[slotId] || slotId;
+  function slotDefFor(dateStr, slotId) {
+    if (!scheduleData) return null;
+    return computeSlotsForDateClient(dateStr, scheduleData).find(s => s.id === slotId) || null;
   }
 
   function expectedSlotsForDate(dateStr) {
-    const day = new Date(dateStr + 'T12:00:00').getDay();
-    const morning = dateStr >= '2026-09-28' ? ['morning1','morning2'] : [];
-    if (day === 1) return [...morning, 'reserve'];
-    return [...morning, 'afternoon1','afternoon2'];
+    if (!scheduleData) return [];
+    return computeSlotsForDateClient(dateStr, scheduleData).map(s => s.id);
   }
 
-  // חלון "מילואים בלבד" קיים כיום רק ביום ב׳ אחה"צ (סבב יחיד); סבבי הבוקר של יום ב׳ פתוחים לכולם
   function isReserveSlot(dateStr, slotId) {
-    const day = new Date(dateStr + 'T12:00:00').getDay();
-    return day === 1 && slotId === 'reserve';
+    return !!slotDefFor(dateStr, slotId)?.reserveOnly;
+  }
+
+  function capacityDefault() { return scheduleData?.capacityDefault || 30; }
+
+  // שמות/שעות של סבבים ישנים שאינם קיימים יותר בלוח השעות הנוכחי — לתצוגה נכונה של רישומי עבר בלבד
+  const LEGACY_SLOTS = {
+    noon1:      { label: '🌞 צהריים א׳ 12:00–14:00', short: 'צהריים א׳', timeText: 'צהריים א׳ 12:00-14:00', endMinutes: 14 * 60 },
+    noon2:      { label: '🌞 צהריים ב׳ 14:00–16:00', short: 'צהריים ב׳', timeText: 'צהריים ב׳ 14:00-16:00', endMinutes: 16 * 60 },
+    evening1:   { label: '🌤️ סבב א׳ 16:00–18:00',    short: 'סבב א׳',   timeText: 'סבב א׳ 16:00-18:00',    endMinutes: 18 * 60 },
+    evening2:   { label: '🌙 סבב ב׳ 18:00–20:00',     short: 'סבב ב׳',   timeText: 'סבב ב׳ 18:00-20:00',    endMinutes: 20 * 60 },
+    afternoon:  { label: '🌆 סשן יחיד 16:00–18:00',   short: 'סשן יחיד', timeText: 'סשן יחיד 16:00-18:00',  endMinutes: 18 * 60 },
+    reserveWed: { label: '🎖️ מילואים 18:00 ואילך',    short: 'מילואים',  timeText: 'מילואים 18:00 ואילך',   endMinutes: 21 * 60 },
+  };
+
+  function slotShortName(s) { return s.reserveOnly ? 'מילואים' : s.display; }
+  function slotEmoji(s) { return s.reserveOnly ? '🎖️' : (s.period === 'בוקר' ? '☀️' : '🌆'); }
+
+  function slotLabel(dateStr, slotId) {
+    const s = slotDefFor(dateStr, slotId);
+    if (s) return `${slotEmoji(s)} ${slotShortName(s)} ${s.label}`;
+    return LEGACY_SLOTS[slotId]?.label || slotId;
+  }
+
+  function slotShort(dateStr, slotId) {
+    const s = slotDefFor(dateStr, slotId);
+    if (s) return slotShortName(s);
+    return LEGACY_SLOTS[slotId]?.short || slotId;
+  }
+
+  // תווית "שם + שעה" — לשימוש בייצוא ה-CSV/PDF (מחליף את RESERVE_SLOT_TIME_LABELS הקבוע)
+  function slotTimeText(dateStr, slotId) {
+    const s = slotDefFor(dateStr, slotId);
+    if (s) return `${slotShortName(s)} ${s.label}`;
+    return LEGACY_SLOTS[slotId]?.timeText || slotId;
+  }
+
+  function isSlotPassed(dateStr, slotId) {
+    const s = slotDefFor(dateStr, slotId);
+    let h = 23, m = 59;
+    const match = s?.label.match(/–(\d{2}):(\d{2})$/);
+    if (match) { h = Number(match[1]); m = Number(match[2]); }
+    else if (!s && LEGACY_SLOTS[slotId]) { h = Math.floor(LEGACY_SLOTS[slotId].endMinutes / 60); m = LEGACY_SLOTS[slotId].endMinutes % 60; }
+    const end = new Date(dateStr + 'T' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':00');
+    return new Date() > end;
   }
 
   function capClass(pct) {
@@ -890,13 +930,6 @@
     const cutoff = new Date(today);
     cutoff.setDate(cutoff.getDate() - 5);
     return allDates.filter(d => new Date(d + 'T00:00:00') >= cutoff);
-  }
-
-  const SLOT_END = { morning1:'11:30', morning2:'14:00', noon1:'14:00', noon2:'16:00', evening1:'18:00', evening2:'20:00', afternoon:'18:00', afternoon1:'17:30', afternoon2:'19:00', reserve:'19:00', reserveWed:'21:00' };
-  function isSlotPassed(dateStr, slotId) {
-    const [h, m] = (SLOT_END[slotId] || '23:59').split(':').map(Number);
-    const end = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
-    return new Date() > end;
   }
 
   // ── auth ──────────────────────────────────────────────────
@@ -991,12 +1024,14 @@
   // ── data ──────────────────────────────────────────────────
   async function loadData() {
     try {
-      const [adminRes, datesRes] = await Promise.all([
+      const [adminRes, datesRes, scheduleRes] = await Promise.all([
         authFetch('/api/admin'),
-        fetch('/api/dates')
+        fetch('/api/dates'),
+        fetch('/api/schedule')
       ]);
       allData = await adminRes.json();
       const datesArr = await datesRes.json();
+      scheduleData = await scheduleRes.json();
       // שמור את כל תאריכי האירוע ממוינים
       allEventDates = datesArr.map(d => d.date).sort();
       render();
@@ -1037,8 +1072,8 @@
         totalPeople   += people;
         totalFamilies += regs.length;
         regs.forEach(r => { totalChildren += (r.children||[]).length; });
-        totalCapacity += 30;
-        const pct = Math.round((people/30)*100);
+        totalCapacity += capacityDefault();
+        const pct = Math.round((people/capacityDefault())*100);
         if (pct >= 100) fullSlots++;
         else if (pct >= 80) almostSlots++;
       });
@@ -1048,7 +1083,7 @@
     dates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
         const people = countPeople(regs);
-        const pct = Math.round((people/30)*100);
+        const pct = Math.round((people/capacityDefault())*100);
         allSlots.push({ date, slotId, people, pct });
       });
     });
@@ -1072,9 +1107,9 @@
     const alerts = [];
     dates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
-        const pct = Math.round((countPeople(regs)/30)*100);
-        if (pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(date)} — ${slotShort(slotId)}</strong>: נסגר (30/30)</div>`);
-        else if (pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(date)} — ${slotShort(slotId)}</strong>: ${countPeople(regs)}/30 — נותרו ${30-countPeople(regs)} מקומות</div>`);
+        const pct = Math.round((countPeople(regs)/capacityDefault())*100);
+        if (pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(date)} — ${slotShort(date, slotId)}</strong>: נסגר (${capacityDefault()}/${capacityDefault()})</div>`);
+        else if (pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(date)} — ${slotShort(date, slotId)}</strong>: ${countPeople(regs)}/${capacityDefault()} — נותרו ${capacityDefault()-countPeople(regs)} מקומות</div>`);
       });
     });
     if (!alerts.length) alerts.push('<div class="alert-item ok">✅ אין התראות — כל החלונות תקינים</div>');
@@ -1107,7 +1142,7 @@
       const slotsHtml = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
-        const pct = Math.round((count / 30) * 100);
+        const pct = Math.round((count / capacityDefault()) * 100);
         const fillClass = pct < 50 ? 'low' : pct < 85 ? 'medium' : 'high';
         const slotKey = date + '-' + slotId;
         const passed  = isSlotPassed(date, slotId);
@@ -1135,13 +1170,13 @@
         return `
           <div class="slot-section${isReserve ? ' reserve-slot' : ''}">
             <div class="slot-title" onclick="toggleSlot('${slotKey}')">
-              <h3>${slotLabel(slotId)}${reserveBadge}${passedLabel}</h3>
+              <h3>${slotLabel(date, slotId)}${reserveBadge}${passedLabel}</h3>
               <div style="display:flex;align-items:center;gap:10px">
                 <div class="capacity-bar-wrap">
                   <div class="capacity-bar">
                     <div class="capacity-fill ${fillClass}" style="width:${pct}%"></div>
                   </div>
-                  <span class="capacity-text">${count}/30</span>
+                  <span class="capacity-text">${count}/${capacityDefault()}</span>
                 </div>
                 <span id="slot-icon-${slotKey}" style="font-size:0.82rem;color:#aaa">${icon}</span>
               </div>
@@ -1186,16 +1221,16 @@
       const slotRows = slots.map(slotId => {
         const regs = dayData[slotId] || [];
         const count = countPeople(regs);
-        const pct = Math.min(Math.round((count/30)*100), 100);
+        const pct = Math.min(Math.round((count/capacityDefault())*100), 100);
         const cls = capClass(pct);
         const isReserve = isReserveSlot(date, slotId);
         return `
           <div class="capmap-slot-row${isReserve ? ' reserve' : ''}" title="${isReserve ? 'מילואים בלבד' : ''}">
-            <span class="capmap-slot-name">${isReserve ? '🎖️ ' : ''}${slotShort(slotId)}</span>
+            <span class="capmap-slot-name">${isReserve ? '🎖️ ' : ''}${slotShort(date, slotId)}</span>
             <div class="capmap-mini-bar-wrap">
               <div class="capmap-mini-bar ${cls}" style="width:${pct}%"></div>
             </div>
-            <span class="capmap-slot-num">${count}/30${pct>=100?' <span class="capmap-full-tag">מלא</span>':''}</span>
+            <span class="capmap-slot-num">${count}/${capacityDefault()}${pct>=100?' <span class="capmap-full-tag">מלא</span>':''}</span>
           </div>`;
       }).join('');
       return `
@@ -1246,7 +1281,7 @@
         totalPeople   += countPeople(regs);
         totalFamilies += regs.length;
         regs.forEach(r => { totalChildren += (r.children||[]).length; });
-        totalCapacity += 30;
+        totalCapacity += capacityDefault();
       });
     });
     const fillPct   = totalCapacity ? Math.round((totalPeople/totalCapacity)*100) : 0;
@@ -1312,7 +1347,7 @@
       const allSlotKeys = [...new Set([...daySlots, ...Object.keys(dayData)])];
       let dayPeople = 0;
       allSlotKeys.forEach(s => { dayPeople += countPeople(dayData[s] || []); });
-      const dayCap = Math.max(daySlots.length, Object.keys(dayData).length) * 30;
+      const dayCap = Math.max(daySlots.length, Object.keys(dayData).length) * capacityDefault();
       const pct = Math.round((dayPeople/dayCap)*100);
       const cls = capClass(pct);
       const dayEndTime = new Date(date + 'T20:00:00');
@@ -1414,7 +1449,7 @@
           const ages  = (r.children||[]).map(c=>c.age??'').join(' | ');
           rows.push([
             date, hebrewDay(date),
-            {morning1:'בוקר א׳ 09:00-11:30',morning2:'בוקר ב׳ 11:30-14:00',noon1:'צהריים א׳ 12:00-14:00',noon2:'צהריים ב׳ 14:00-16:00',evening1:'סבב א׳ 16:00-18:00',evening2:'סבב ב׳ 18:00-20:00',afternoon:'סשן יחיד 16:00-18:00',afternoon1:'סבב א׳ 16:00-17:30',afternoon2:'סבב ב׳ 17:30-19:00',reserve:'מילואים 16:00-19:00',reserveWed:'מילואים 18:00 ואילך'}[slotId]||slotId,
+            slotTimeText(date, slotId),
             r.parentName, r.phone, names, ages, (r.children||[]).length,
             new Date(r.registeredAt).toLocaleString('he-IL')
           ]);
@@ -1440,14 +1475,7 @@
     });
   }
 
-  const RESERVE_SLOT_TIME_LABELS = {
-    morning1:'בוקר א׳ 09:00-11:30', morning2:'בוקר ב׳ 11:30-14:00',
-    evening1:'סבב א׳ 16:00-18:00', evening2:'סבב ב׳ 18:00-20:00',
-    afternoon:'סשן יחיד 16:00-18:00', afternoon1:'סבב א׳ 16:00-17:30', afternoon2:'סבב ב׳ 17:30-19:00',
-    reserve:'מילואים 16:00-19:00', reserveWed:'מילואים 18:00 ואילך'
-  };
-
-  // מרכז את הסינון: רק תאריכי השבוע הפעיל הנוכחי + רק חלונות "מילואים בלבד"
+    // מרכז את הסינון: רק תאריכי השבוע הפעיל הנוכחי + רק חלונות "מילואים בלבד"
   function getReserveRegistrations() {
     const currentWeekDates = new Set(allEventDates);
     const groups = [];
@@ -1479,7 +1507,7 @@
         const names = (r.children||[]).map(c=>c.name).join(', ');
         const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
         rows.push([
-          hebrewDate(date), hebrewDay(date), RESERVE_SLOT_TIME_LABELS[slotId] || slotId,
+          hebrewDate(date), hebrewDay(date), slotTimeText(date, slotId),
           r.parentName, r.phone, names, ages, (r.children||[]).length, r.allergies || '',
           new Date(r.registeredAt).toLocaleString('he-IL')
         ]);
@@ -1526,7 +1554,7 @@
     const daysHtml = Object.keys(byDate).sort().map(date => {
       const slotsHtml = byDate[date].map(({ slotId, regs }) => `
         <div class="rpt-slot">
-          <div class="rpt-slot-title">${RESERVE_SLOT_TIME_LABELS[slotId] || slotId}</div>
+          <div class="rpt-slot-title">${slotTimeText(date, slotId)}</div>
           <table class="rpt-table">
             <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th><th>אלרגיות</th></tr></thead>
             <tbody>
@@ -1609,7 +1637,7 @@
       const allSlotKeys = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
       let people = 0;
       allSlotKeys.forEach(s => { people += countPeople(dayData[s] || []); });
-      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * 30;
+      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * capacityDefault();
       return cap ? Math.round((people / cap) * 100) : 0;
     });
 
@@ -1668,7 +1696,7 @@
       const allSlotKeys = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
       let people = 0;
       allSlotKeys.forEach(s => { people += countPeople(dayData[s] || []); });
-      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * 30;
+      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * capacityDefault();
       return cap ? Math.round((people / cap) * 100) : 0;
     });
 
