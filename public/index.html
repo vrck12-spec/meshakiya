@@ -518,6 +518,17 @@
   function dateToStr(d) { return d.toISOString().split('T')[0]; }
   function formatShortDate(dateStr) { const [, m, d] = dateStr.split('-'); return `${d}.${m}`; }
 
+  // בורח מ-HTML כדי שהתוכן החופשי שמנהל מזין במסך עריכת השעות (period, display, label)
+  // לא ירוץ כקוד אצל תושבים שפותחים את הדף הציבורי הזה
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // מחשב את הסבבים לתאריך נתון לפי תבנית שבועית + חריגים — זהה ללוגיקה בשרת (server.js: computeSlotsForDate)
   function computeSlotsForDateClient(dateStr, settings) {
     const day = new Date(dateStr + 'T12:00:00').getDay();
@@ -603,7 +614,7 @@
     const countLabel = card.slots.length > 1 ? 'שני סבבים' : 'סבב יחיד';
     if (card.slots.length === 1 && card.slots[0].reserveOnly) return `מילואים בלבד, ${countLabel}`;
     const period = card.slots[0]?.period;
-    return period ? `${period}, ${countLabel}` : countLabel;
+    return period ? `${escapeHtml(period)}, ${countLabel}` : countLabel;
   }
 
   function renderHourCards(settings, range) {
@@ -615,7 +626,7 @@
       return `
         <div class="hour-card ${isReserve ? 'reserve' : ''}" style="${style}">
           <strong>${formatDayRange(card.days)}${newTag} — ${cardSubtitle(card)}</strong>
-          ${card.slots.map(s => s.label).join(' | ')}
+          ${card.slots.map(s => escapeHtml(s.label)).join(' | ')}
         </div>`;
     }).join('');
     document.getElementById('hoursGrid').innerHTML = html ||
@@ -690,7 +701,7 @@
                 ${slot.full ? 'disabled' : ''}
               >
                 ${slot.reserveOnly ? '<div class="reserve-tag">🎖️ פתוח לרישום למשפחות המילואים בלבד</div>' : ''}
-                <div class="time">${slot.label}</div>
+                <div class="time">${escapeHtml(slot.label)}</div>
                 <div class="spots">${slot.full ? 'נסגר — מלא' : `${slot.available} מקומות פנויים`}</div>
               </button>
             `).join('')}

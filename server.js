@@ -101,6 +101,12 @@ function signToken(payload) {
   return `${body}.${sig}`;
 }
 
+// טביעת אצבע קצרה של הסיסמה הנוכחית, נשמרת בתוך הטוקן בזמן ההנפקה. כשמנהל מחליף סיסמה
+// (למשל אחרי דליפה) הטביעה משתנה ולכן טוקנים ישנים נפסלים מיד ב-verifyToken, בלי צורך ברשימת ביטול.
+function managerFingerprint(password) {
+  return sha256(password).toString('hex').slice(0, 16);
+}
+
 function verifyToken(token) {
   if (!AUTH_SECRET || !token) return null;
   const [body, sig] = token.split('.');
@@ -110,8 +116,9 @@ function verifyToken(token) {
   try {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
     if (!payload.exp || payload.exp < Date.now()) return null;
-    // מנהל שהוסר ממשתני הסביבה מאבד גישה מיד
-    if (!getManagers().some(m => m.name === payload.name)) return null;
+    // מנהל שהוסר ממשתני הסביבה מאבד גישה מיד, וכך גם מנהל שהסיסמה שלו הוחלפה
+    const manager = getManagers().find(m => m.name === payload.name);
+    if (!manager || payload.pv !== managerFingerprint(manager.password)) return null;
     return payload;
   } catch { return null; }
 }
@@ -130,6 +137,44 @@ function requireManager(req, res, next) {
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_BLOCK_MS = 15 * 60 * 1000;
 const loginFails = new Map(); // ip -> { count, until }
+
+// הגבלת קצב על הרשמה ציבורית: מקסימום REGISTER_MAX בקשות מאותה כתובת בתוך חלון הזמן
+const REGISTER_MAX = 8;
+const REGISTER_WINDOW_MS = 10 * 60 * 1000; // 10 דקות
+const registerAttempts = new Map(); // ip -> { count, windowStart }
+
+function checkRegisterRateLimit(ip) {
+  const now = Date.now();
+  const rec = registerAttempts.get(ip);
+  if (!rec || now - rec.windowStart > REGISTER_WINDOW_MS) {
+    registerAttempts.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  rec.count++;
+  return rec.count <= REGISTER_MAX;
+}
+
+function isValidIsraeliPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return /^0\d{8,9}$/.test(digits) || /^972\d{8,9}$/.test(digits);
+}
+
+// מנעול בזיכרון פר תאריך+סבב — מכריח את "בדיקת מקום פנוי" ו"שמירה" לרוץ ברצף לאותו סבב,
+// כדי שבקשות מקבילות לא יעברו את בדיקת המכסה יחד ויחרגו ממנה (ראו server.js: /api/register)
+const slotLocks = new Map();
+function withSlotLock(date, slot, fn) {
+  const key = date + '|' + slot;
+  const tail = (slotLocks.get(key) || Promise.resolve()).catch(() => {});
+  const run = tail.then(fn);
+  slotLocks.set(key, run.catch(() => {}));
+  return run;
+}
+
+// מזהה הרשמה: זמן במילישניות * 1000 + מספר אקראי (0-999), נשאר בטוח בטווח Number
+// וכמעט בלתי אפשרי שיתנגש גם כששתי הרשמות נופלות באותה מילישנייה בדיוק
+function generateRegistrationId() {
+  return Date.now() * 1000 + crypto.randomInt(1000);
+}
 
 // ===== מסד נתונים: PostgreSQL בענן או JSON מקומי =====
 let db = null;
@@ -488,9 +533,15 @@ app.get('/api/schedule', (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
+    if (!checkRegisterRateLimit(req.ip))
+      return res.status(429).json({ error: 'יותר מדי בקשות הרשמה מכתובת זו. נסו שוב בעוד כמה דקות' });
+
     const { date, slot, parentName, phone, email, children, allergies } = req.body;
     if (!date || !slot || !parentName || !phone || !children?.length)
       return res.status(400).json({ error: 'נא למלא את כל השדות הנדרשים' });
+    if (!isValidIsraeliPhone(phone))
+      return res.status(400).json({ error: 'מספר טלפון לא תקין' });
+
     const capacity = scheduleSettings.capacityDefault || DEFAULT_CAPACITY;
     const slotDef = computeSlotsForDate(date).find(s => s.id === slot);
     if (!slotDef)
@@ -498,28 +549,33 @@ app.post('/api/register', async (req, res) => {
     if (isSlotPast(date, slotDef))
       return res.status(409).json({ error: 'מצטערים, המועד הזה כבר חלף', expired: true });
 
-    const regs = await getSlotRegistrations(date, slot);
-    const peopleCount = countPeople(regs);
-    if (peopleCount >= capacity)
-      return res.status(409).json({ error: `מצטערים, הרישום למועד זה נסגר — הגענו ל-${capacity} אנשים`, full: true });
-
-    const remaining = capacity - peopleCount;
     const newPeople = 1 + children.length;
-    if (newPeople > remaining)
-      return res.status(409).json({ error: `נותרו רק ${remaining} מקומות (כולל הורים)`, remaining });
 
-    const entry = { id: Date.now(), parentName, phone, email: email || null, children, allergies: allergies || null, slotLabel: slotDef.label, registeredAt: new Date().toISOString() };
-    await addRegistration(date, slot, entry);
+    // בדיקת המקום הפנוי והשמירה רצות בתוך נעילה פר-סבב, כדי שבקשות מקבילות לא יעברו יחד את המכסה
+    const result = await withSlotLock(date, slot, async () => {
+      const regs = await getSlotRegistrations(date, slot);
+      const peopleCount = countPeople(regs);
+      if (peopleCount >= capacity)
+        return { status: 409, body: { error: `מצטערים, הרישום למועד זה נסגר — הגענו ל-${capacity} אנשים`, full: true } };
 
-    const newTotal = peopleCount + newPeople;
-    const slotInfo = slotDef;
+      const remaining = capacity - peopleCount;
+      if (newPeople > remaining)
+        return { status: 409, body: { error: `נותרו רק ${remaining} מקומות (כולל הורים)`, remaining } };
 
+      const entry = { id: generateRegistrationId(), parentName, phone, email: email || null, children, allergies: allergies || null, slotLabel: slotDef.label, registeredAt: new Date().toISOString() };
+      await addRegistration(date, slot, entry);
+      return { entry, newTotal: peopleCount + newPeople };
+    });
+
+    if (result.status) return res.status(result.status).json(result.body);
+
+    const { entry, newTotal } = result;
     const responseData = {
       success: true,
       message: 'הרישום בוצע בהצלחה!',
       confirmationId: entry.id,
       date, dayName: hebrewDay(date),
-      slotLabel: slotInfo?.label,
+      slotLabel: slotDef.label,
       childrenCount: children.length,
       totalRegistered: newTotal,
       remainingSpots: capacity - newTotal
@@ -531,7 +587,7 @@ app.post('/api/register', async (req, res) => {
     if (email) {
       sendConfirmationEmail(email, {
         parentName, date, dayName: hebrewDay(date),
-        slotLabel: slotInfo?.label, children
+        slotLabel: slotDef.label, children
       }).catch(err => console.error('שגיאה בשליחת מייל:', err.message));
     }
 
@@ -566,7 +622,7 @@ app.post('/api/login', (req, res) => {
   }
 
   loginFails.delete(ip);
-  const token = signToken({ name: user.name, role: 'manager', exp: now + TOKEN_TTL_MS });
+  const token = signToken({ name: user.name, role: 'manager', exp: now + TOKEN_TTL_MS, pv: managerFingerprint(user.password) });
   res.json({ token, name: user.name });
 });
 
@@ -639,6 +695,41 @@ function validateScheduleSettings(settings) {
   return errors;
 }
 
+// בודק חפיפה על התוצאה הממוזגת בפועל (תבנית שבועית + חריגים יחד), לא רק כל רשימה בנפרד —
+// כדי לתפוס למשל חריג "add" שמתווסף על סבב קיים באותם ימים בלי שהמנהל שם לב לחפיפה.
+// בודק את 120 הימים הקרובים ומדווח פעם אחת לכל צירוף יום-בשבוע+זוג-סבבים חופפים (לא לכל תאריך בטווח).
+function validateMergedSlotOverlaps(settings) {
+  const errors = [];
+  const seen = new Set();
+  const timeRe = /^(\d{2}):(\d{2})–(\d{2}):(\d{2})$/;
+  const toMin = (h, m) => Number(h) * 60 + Number(m);
+  const today = nowInIsrael().dateStr;
+  const horizonStart = new Date(today + 'T12:00:00');
+
+  for (let i = 0; i < 120; i++) {
+    const d = new Date(horizonStart); d.setDate(d.getDate() + i);
+    const dateStr = dateToStr(d);
+    const slots = computeSlotsForDate(dateStr, settings);
+    const ranges = [];
+    for (const s of slots) {
+      const m = String(s.label || '').match(timeRe);
+      if (!m) continue; // פורמט לא תקין כבר מדווח ב-validateScheduleSettings
+      const start = toMin(m[1], m[2]), end = toMin(m[3], m[4]);
+      for (const r of ranges) {
+        if (start < r.end && end > r.start) {
+          const dowKey = d.getDay() + '|' + [r.id, s.id].sort().join('|');
+          if (!seen.has(dowKey)) {
+            seen.add(dowKey);
+            errors.push(`${hebrewDay(dateStr)} (החל מ-${dateStr}): סבב "${r.id}" חופף בפועל לסבב "${s.id}" אחרי מיזוג התבנית השבועית עם החריגים`);
+          }
+        }
+      }
+      ranges.push({ id: s.id, start, end });
+    }
+  }
+  return errors;
+}
+
 // מוצא סבבים שנעלמים מהתאריכים הקרובים ויש בהם נרשמים — כדי לחסום מחיקה שתסתיר רישומים קיימים
 async function findRemovedSlotConflicts(oldSettings, newSettings) {
   const all = await getAllData();
@@ -665,15 +756,25 @@ app.get('/api/admin/schedule', requireManager, (req, res) => {
 app.put('/api/admin/schedule', requireManager, async (req, res) => {
   try {
     const newSettings = req.body;
+
+    // בדיקת concurrency אופטימית: אם ה-updatedAt שהלקוח טען לא תואם את המצב הנוכחי בשרת,
+    // מנהל אחר כבר שמר בינתיים — עוצרים כאן במקום לדרוס בשקט (ראו admin.html: attempt())
+    if ((newSettings.updatedAt || null) !== (scheduleSettings.updatedAt || null))
+      return res.status(409).json({ error: 'ההגדרות עודכנו בינתיים על ידי מנהל אחר. יש לרענן את הדף ולנסות שוב.', staleUpdate: true });
+
     const errors = validateScheduleSettings(newSettings);
     if (errors.length) return res.status(400).json({ error: 'הגדרות לא תקינות', details: errors });
+
+    const mergedErrors = validateMergedSlotOverlaps(newSettings);
+    if (mergedErrors.length) return res.status(400).json({ error: 'הגדרות לא תקינות', details: mergedErrors });
 
     const conflicts = await findRemovedSlotConflicts(scheduleSettings, newSettings);
     if (conflicts.length && !req.query.force)
       return res.status(409).json({ error: 'יש נרשמים בסבבים שיימחקו', conflicts });
 
     await saveScheduleSettings(newSettings, req.user.name);
-    res.json({ success: true });
+    // מחזירים את updatedAt החדש כדי שהלקוח יעדכן את זה שבידיו — אחרת השמירה הבאה תיתפס בטעות כ"לא עדכנית"
+    res.json({ success: true, updatedAt: newSettings.updatedAt, updatedBy: newSettings.updatedBy });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'שגיאת שרת' });
@@ -690,5 +791,12 @@ initDB().then(loadScheduleSettings).then(() => {
     const managers = getManagers();
     if (!AUTH_SECRET || !managers.length) console.warn('⚠️ ניהול חסום: חסרים משתני סביבה MANAGER1_NAME/PASSWORD, MANAGER2_NAME/PASSWORD, AUTH_SECRET');
     else console.log(`🔐 מנהלים מוגדרים: ${managers.map(m => m.name).join(', ')}`);
+    // זיהוי "ייצור" מתבסס רק על RAILWAY_ENVIRONMENT. אם יש מסד נתונים אמיתי מחובר (DATABASE_URL)
+    // אבל הסביבה בכל זאת לא זוהתה כ"ייצור", זה כנראה סימן שמנגנון הזיהוי לא מתאים לפלטפורמת הפריסה
+    // הנוכחית — מזהירים בקול רם כדי שלא ליפול בשקט על סיסמת ברירת המחדל של פיתוח (1234).
+    if (!IS_PRODUCTION && process.env.DATABASE_URL) {
+      console.warn('🚨 אזהרה: DATABASE_URL מוגדר (מסד נתונים אמיתי מחובר) אך הסביבה לא זוהתה כ"ייצור" (RAILWAY_ENVIRONMENT לא מוגדר).');
+      console.warn('   אם זו סביבה חיה, הניהול עלול להיות פתוח עם סיסמת ברירת המחדל 1234. ודאו RAILWAY_ENVIRONMENT ו/או משתני MANAGER1/2.');
+    }
   });
 }).catch(e => { console.error('שגיאה באתחול:', e); process.exit(1); });

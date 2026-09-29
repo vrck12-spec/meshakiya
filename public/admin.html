@@ -1035,9 +1035,37 @@
     return regs.reduce((sum, r) => sum + 1 + (r.children || []).length, 0);
   }
 
+  // בורח מ-HTML כדי שערכים חופשיים שתושב מזין בטופס ההרשמה (שם הורה, טלפון, שמות ילדים, אלרגיות)
+  // לא ירוצו כקוד כשהם מוצגים חזרה ב-innerHTML במסכי הניהול או בייצואי ה-PDF
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // מונע הזרקת נוסחאות באקסל/שיטס: תא שמתחיל ב-= + - @ מתפרש כנוסחה כשפותחים CSV/אקסל
+  function sanitizeCsvCell(v) {
+    const s = String(v ?? '');
+    return /^[=+\-@]/.test(s) ? `'${s}` : s;
+  }
+
   function hebrewDay(dateStr) {
     const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
     return 'יום ' + days[new Date(dateStr + 'T12:00:00').getDay()];
+  }
+
+  // תאריך "היום" לפי אזור הזמן של ישראל — לא לפי UTC. שימוש ב-setHours(0,0,0,0)+toISOString()
+  // או ב-new Date().toISOString() ישירות מחזיר את התאריך ב-UTC, שתמיד/לרוב מוזז יום אחורה בישראל (UTC+2/3)
+  function todayIsraelStr() {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(new Date()).map(p => [p.type, p.value])
+    );
+    return `${parts.year}-${parts.month}-${parts.day}`;
   }
 
   function formatDate(dateStr) {
@@ -1166,7 +1194,7 @@
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('topbarActions').style.display = 'flex';
     const dayPdfDate = document.getElementById('dayPdfDate');
-    if (!dayPdfDate.value) dayPdfDate.value = new Date().toISOString().split('T')[0];
+    if (!dayPdfDate.value) dayPdfDate.value = todayIsraelStr();
     switchView(currentView);
     loadData();
   }
@@ -1286,9 +1314,11 @@
     let totalCapacity = 0, fullSlots = 0, almostSlots = 0;
     const allSlots = [];
 
-    // compute totals from ALL data (not just visible)
+    // compute totals from ALL data (not just visible) — עובר על כל הסבבים הצפויים ליום, כולל
+    // כאלה שעדיין אין בהם אף רישום, כדי שהקיבולת הכוללת תשקף את כל החלונות הפתוחים ולא רק מאוכלסים
     allDates.forEach(date => {
-      Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
+      expectedSlotsForDate(date).forEach(slotId => {
+        const regs = (allData[date] || {})[slotId] || [];
         const people = countPeople(regs);
         totalPeople   += people;
         totalFamilies += regs.length;
@@ -1329,7 +1359,7 @@
     dates.forEach(date => {
       Object.entries(allData[date] || {}).forEach(([slotId, regs]) => {
         const pct = Math.round((countPeople(regs)/capacityDefault())*100);
-        if (pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(date)} — ${slotShort(date, slotId)}</strong>: נסגר (${capacityDefault()}/${capacityDefault()})</div>`);
+        if (pct >= 100) alerts.push(`<div class="alert-item full">🔴 <strong>${hebrewDay(date)} — ${slotShort(date, slotId)}</strong>: נסגר (${countPeople(regs)}/${capacityDefault()})</div>`);
         else if (pct >= 80) alerts.push(`<div class="alert-item almost">🟠 <strong>${hebrewDay(date)} — ${slotShort(date, slotId)}</strong>: ${countPeople(regs)}/${capacityDefault()} — נותרו ${capacityDefault()-countPeople(regs)} מקומות</div>`);
       });
     });
@@ -1378,11 +1408,11 @@
           ? regs.map((r, i) => `
             <tr>
               <td>${i+1}</td>
-              <td>${r.parentName}</td>
-              <td dir="ltr">${r.phone}</td>
-              <td>${(r.children||[]).map(c=>`<span class="tag">${c.name}${c.age!=null?' ('+c.age+')':''}</span>`).join('')}</td>
+              <td>${escapeHtml(r.parentName)}</td>
+              <td dir="ltr">${escapeHtml(r.phone)}</td>
+              <td>${(r.children||[]).map(c=>`<span class="tag">${escapeHtml(c.name)}${c.age!=null?' ('+escapeHtml(c.age)+')':''}</span>`).join('')}</td>
               <td>${1+(r.children||[]).length} אנשים</td>
-              ${isReserve ? `<td>${r.allergies || '—'}</td>` : ''}
+              ${isReserve ? `<td>${escapeHtml(r.allergies) || '—'}</td>` : ''}
               <td style="font-size:0.73rem;color:#aaa">${new Date(r.registeredAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</td>
               <td><button onclick="deleteReg(${r.id})" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:1rem" title="מחק">🗑️</button></td>
             </tr>`).join('')
@@ -1428,7 +1458,7 @@
   // ── Capacity Map ──────────────────────────────────────────
   function renderCapacityMap(dates) {
     const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayIsraelStr();
 
     if (!dates.length) {
       document.getElementById('capacityMap').innerHTML = '<div style="color:#aaa;font-size:0.88rem">אין נתונים</div>';
@@ -1550,7 +1580,7 @@
 
     const today = new Date();
     today.setHours(0,0,0,0);
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = todayIsraelStr();
     const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
 
     // ── hero date ──
@@ -1678,7 +1708,7 @@
       });
     });
     const bom = '\uFEFF';
-    const csv = bom + rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = bom + rows.map(r => r.map(v=>`"${sanitizeCsvCell(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'רישומים_משחקיה.csv';
@@ -1729,7 +1759,8 @@
         const ages  = (r.children||[]).map(c=>c.age??'').join(', ');
         rows.push([
           hebrewDate(date), hebrewDay(date), slotTimeText(date, slotId),
-          r.parentName, r.phone, names, ages, (r.children||[]).length, r.allergies || '',
+          sanitizeCsvCell(r.parentName), sanitizeCsvCell(r.phone), sanitizeCsvCell(names), sanitizeCsvCell(ages),
+          (r.children||[]).length, sanitizeCsvCell(r.allergies || ''),
           new Date(r.registeredAt).toLocaleString('he-IL')
         ]);
       });
@@ -1782,11 +1813,11 @@
               ${regs.map((r, i) => `
                 <tr>
                   <td>${i + 1}</td>
-                  <td>${r.parentName}</td>
-                  <td dir="ltr">${r.phone}</td>
-                  <td>${(r.children||[]).map(c => `${c.name}${c.age!=null?' ('+c.age+')':''}`).join(', ')}</td>
+                  <td>${escapeHtml(r.parentName)}</td>
+                  <td dir="ltr">${escapeHtml(r.phone)}</td>
+                  <td>${(r.children||[]).map(c => `${escapeHtml(c.name)}${c.age!=null?' ('+escapeHtml(c.age)+')':''}`).join(', ')}</td>
                   <td>${1 + (r.children||[]).length}</td>
-                  <td>${r.allergies || '—'}</td>
+                  <td>${escapeHtml(r.allergies) || '—'}</td>
                 </tr>`).join('')}
             </tbody>
           </table>
@@ -1816,7 +1847,7 @@
 
   // ── PDF יומי — רשימת ביקורת לכל הנרשמים ליום נבחר, עבור מי שמתפעל את המשחקייה בפועל ──
   function exportDayPDF() {
-    const date = document.getElementById('dayPdfDate').value || new Date().toISOString().split('T')[0];
+    const date = document.getElementById('dayPdfDate').value || todayIsraelStr();
     const slots = expectedSlotsForDate(date);
     if (!slots.length) { alert('אין סבבים מוגדרים לתאריך זה — המשחקייה סגורה'); return; }
 
@@ -1838,11 +1869,11 @@
               ${regs.length ? regs.map((r, i) => `
                 <tr>
                   <td>${i + 1}</td>
-                  <td>${r.parentName}</td>
-                  <td dir="ltr">${r.phone}</td>
-                  <td>${(r.children || []).map(c => `${c.name}${c.age != null ? ' (' + c.age + ')' : ''}`).join(', ')}</td>
+                  <td>${escapeHtml(r.parentName)}</td>
+                  <td dir="ltr">${escapeHtml(r.phone)}</td>
+                  <td>${(r.children || []).map(c => `${escapeHtml(c.name)}${c.age != null ? ' (' + escapeHtml(c.age) + ')' : ''}`).join(', ')}</td>
                   <td>${1 + (r.children || []).length}</td>
-                  ${isReserve ? `<td>${r.allergies || '—'}</td>` : ''}
+                  ${isReserve ? `<td>${escapeHtml(r.allergies) || '—'}</td>` : ''}
                   <td class="rpt-check"><span class="rpt-check-box"></span></td>
                 </tr>`).join('') : `<tr><td colspan="${cols}" class="empty-slot">אין רישומים</td></tr>`}
             </tbody>
@@ -2151,7 +2182,7 @@
 
   // ── חריגים ──
   function addException() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayIsraelStr();
     scheduleDraft.exceptions.push({ id: 'exc' + Date.now(), startDate: today, endDate: null, days: [0, 1, 2, 3, 4], type: 'add', slots: [], note: '' });
     renderExceptionsEditor();
     renderPreview();
@@ -2374,15 +2405,14 @@
     const countLabel = card.slots.length > 1 ? 'שני סבבים' : 'סבב יחיד';
     if (card.slots.length === 1 && card.slots[0].reserveOnly) return `מילואים בלבד, ${countLabel}`;
     const period = card.slots[0]?.period;
-    return period ? `${period}, ${countLabel}` : countLabel;
+    return period ? `${escapeHtml(period)}, ${countLabel}` : countLabel;
   }
 
   function formatShortDatePreview(dateStr) { const [, m, d] = dateStr.split('-'); return `${d}.${m}`; }
 
   function renderPreview() {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const start = today.toISOString().split('T')[0];
-    const endDate = new Date(today); endDate.setDate(endDate.getDate() + 13);
+    const start = todayIsraelStr();
+    const endDate = new Date(start + 'T12:00:00'); endDate.setDate(endDate.getDate() + 13); // עוגן בצהריים — בטוח מהיסט UTC
     const range = { start, end: endDate.toISOString().split('T')[0] };
 
     const b = scheduleDraft.banner;
@@ -2397,7 +2427,7 @@
       const style = card.fromException ? 'grid-column:1/-1' : '';
       return `<div class="hour-card ${isReserve ? 'reserve' : ''}" style="${style}">
         <strong>${formatDayRangePreview(card.days)}${newTag} — ${cardSubtitlePreview(card)}</strong>
-        ${card.slots.map(s => s.label).join(' | ')}
+        ${card.slots.map(s => escapeHtml(s.label)).join(' | ')}
       </div>`;
     }).join('') : '<div class="sched-empty" style="grid-column:1/-1">אין שעות פעילות מוגדרות בטווח זה</div>';
   }
@@ -2421,13 +2451,22 @@
       if (res.ok) {
         msg.className = 'msg show success';
         msg.textContent = '✅ השעות נשמרו בהצלחה';
-        scheduleData = scheduleDraft; // מרענן את המקור המשותף לשאר המסכים
+        // עדכון updatedAt כדי שהשמירה הבאה מאותה עריכה לא תיתפס כ"לא עדכנית"
+        scheduleDraft.updatedAt = data.updatedAt ?? scheduleDraft.updatedAt;
+        scheduleDraft.updatedBy = data.updatedBy ?? scheduleDraft.updatedBy;
+        scheduleData = JSON.parse(JSON.stringify(scheduleDraft)); // עותק עצמאי — לא מצביע על אותו אובייקט הניתן לעריכה
         return true;
       }
 
       if (res.status === 400) {
         msg.className = 'msg show error';
         msg.textContent = '⚠️ ' + (data.error || 'שגיאה') + (data.details ? ': ' + data.details.join(' | ') : '');
+        return false;
+      }
+
+      if (res.status === 409 && data.staleUpdate) {
+        msg.className = 'msg show error';
+        msg.textContent = '⚠️ ' + (data.error || 'ההגדרות עודכנו בינתיים על ידי מנהל אחר') + ' — יש לרענן את הדף כדי לטעון את הגרסה העדכנית לפני שמירה נוספת.';
         return false;
       }
 
