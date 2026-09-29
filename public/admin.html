@@ -2161,6 +2161,8 @@
           borderColor: '#1565c0',
           backgroundColor: 'rgba(21,101,192,0.08)',
           pointBackgroundColor: data.map(v => v >= 85 ? '#2e7d32' : v >= 50 ? '#fb8c00' : '#c62828'),
+          // Chart.js חותך כברירת מחדל כל ציור בקצה אזור הגרף — נקודות ב-100% נחתכו בחציין
+          clip: false,
           pointRadius: isDaily ? 5 : 6,
           tension: 0.3,
           fill: true
