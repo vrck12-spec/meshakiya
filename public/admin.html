@@ -422,6 +422,20 @@
       padding-bottom: 10px;
     }
 
+    /* Filter bar in manager view */
+    .mgr-filter { padding: 12px 16px; }
+    .flt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+    .flt-lbl { font-size: 0.85rem; color: #555; font-weight: 600; }
+    .flt-seg { display: inline-flex; border: 1px solid #90caf9; border-radius: 8px; overflow: hidden; }
+    .flt-seg button { border: none; background: white; color: #1565c0; padding: 6px 14px; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+    .flt-seg button + button { border-right: 1px solid #90caf9; }
+    .flt-seg button.active { background: #1565c0; color: white; }
+    .mgr-filter select, .mgr-filter input[type=date] { padding: 5px 8px; border: 1px solid #90caf9; border-radius: 8px; font-family: inherit; font-size: 0.85rem; background: white; }
+    .flt-custom { display: inline-flex; align-items: center; gap: 6px; }
+    .flt-reset { border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 5px 12px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .flt-summary { margin-right: auto; font-size: 0.8rem; color: #888; }
+    .print-only { display: none; }
+
     /* Day summary table in manager view */
     .mgr-day-table {
       width: 100%;
@@ -639,6 +653,8 @@
     body { background: white !important; }
     #loginScreen, #topbar, #mainScreen, .topbar-btn, #btnCsv, #btnCsvReserve, #btnPdfReserve, #btnPdf { display: none !important; }
     #managerScreen { display: block !important; padding: 0 !important; margin: 0 !important; }
+    .mgr-filter { display: none !important; }
+    .print-only { display: block !important; }
 
     /* headers — black text on white */
     .mgr-hero {
@@ -915,6 +931,35 @@
   </div>
 
   <!-- KPI cards (colored grid) -->
+  <!-- Filter bar: קיבוץ + תקופה — חל על כל הדשבורד (KPI, טבלה, תרשים, PDF) -->
+  <div class="mgr-section mgr-filter" id="mgrFilterBar">
+    <div class="flt-row">
+      <span class="flt-lbl">קיבוץ:</span>
+      <div class="flt-seg">
+        <button type="button" data-group="day"   onclick="setMgrGroup('day')">ימים</button>
+        <button type="button" data-group="week"  onclick="setMgrGroup('week')">שבועות</button>
+        <button type="button" data-group="month" onclick="setMgrGroup('month')">חודשים</button>
+      </div>
+      <span class="flt-lbl">תקופה:</span>
+      <select id="fltPreset" onchange="setMgrPreset(this.value)">
+        <option value="all">כל התקופה</option>
+        <option value="last30">30 ימים אחרונים</option>
+        <option value="last90">90 ימים אחרונים</option>
+        <option value="thisMonth">החודש הנוכחי</option>
+        <option value="prevMonth">החודש הקודם</option>
+        <option value="custom">תקופה מותאמת…</option>
+      </select>
+      <span id="fltCustom" class="flt-custom" style="display:none">
+        <input type="date" id="fltFrom" onchange="setMgrCustomRange()" aria-label="מתאריך">
+        <span>–</span>
+        <input type="date" id="fltTo" onchange="setMgrCustomRange()" aria-label="עד תאריך">
+      </span>
+      <button type="button" class="flt-reset" onclick="resetMgrFilter()">↺ אפס</button>
+      <span class="flt-summary" id="fltSummary"></span>
+    </div>
+  </div>
+  <div class="print-only" id="mgrFilterPrint" style="text-align:center;font-size:0.85rem;margin:6px 0"></div>
+
   <div class="mgr-kpi-grid" id="mgrKpis"></div>
 
   <!-- Day-by-day summary -->
@@ -1050,6 +1095,11 @@
   function sanitizeCsvCell(v) {
     const s = String(v ?? '');
     return /^[=+\-@]/.test(s) ? `'${s}` : s;
+  }
+
+  // מספר עם פסיק מפריד אלפים (1,234) — ספרות לועזיות גם בתוך טקסט בעברית
+  function fmtNum(n) {
+    return Number(n || 0).toLocaleString('en-US');
   }
 
   function hebrewDay(dateStr) {
@@ -1343,12 +1393,12 @@
 
     // Stats
     document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="num">${totalPeople}</div><div class="lbl">אנשים נרשמו</div><div class="sub">כולל הורים</div></div>
-      <div class="stat-card green"><div class="num">${remaining}</div><div class="lbl">מקומות פנויים</div><div class="sub">מתוך ${totalCapacity}</div></div>
-      <div class="stat-card"><div class="num">${totalFamilies}</div><div class="lbl">משפחות</div></div>
-      <div class="stat-card"><div class="num">${totalChildren}</div><div class="lbl">ילדים</div></div>
-      <div class="stat-card red"><div class="num">${fullSlots}</div><div class="lbl">חלונות מלאים</div></div>
-      <div class="stat-card orange"><div class="num">${almostSlots}</div><div class="lbl">כמעט מלאים</div></div>
+      <div class="stat-card"><div class="num">${fmtNum(totalPeople)}</div><div class="lbl">אנשים נרשמו</div><div class="sub">כולל הורים</div></div>
+      <div class="stat-card green"><div class="num">${fmtNum(remaining)}</div><div class="lbl">מקומות פנויים</div><div class="sub">מתוך ${fmtNum(totalCapacity)}</div></div>
+      <div class="stat-card"><div class="num">${fmtNum(totalFamilies)}</div><div class="lbl">משפחות</div></div>
+      <div class="stat-card"><div class="num">${fmtNum(totalChildren)}</div><div class="lbl">ילדים</div></div>
+      <div class="stat-card red"><div class="num">${fmtNum(fullSlots)}</div><div class="lbl">חלונות מלאים</div></div>
+      <div class="stat-card orange"><div class="num">${fmtNum(almostSlots)}</div><div class="lbl">כמעט מלאים</div></div>
     `;
 
     // Capacity Map — grouped by day
@@ -1446,7 +1496,7 @@
           <div class="day-header" onclick="toggleDay('${date}')">
             <span>${hebrewDay(date)} — ${formatDate(date)}${dayPassedLabel}</span>
             <div style="display:flex;align-items:center;gap:10px">
-              <span class="day-total">${dayTotal} אנשים</span>
+              <span class="day-total">${fmtNum(dayTotal)} אנשים</span>
               <span id="day-icon-${date}">${dayIcon}</span>
             </div>
           </div>
@@ -1544,76 +1594,206 @@
     return `
       <div class="mgr-kpi-card blue">
         <span class="kpi-icon">👥</span>
-        <div class="kpi-num">${t.totalPeople}</div>
+        <div class="kpi-num">${fmtNum(t.totalPeople)}</div>
         <div class="kpi-lbl">אנשים נרשמו</div>
         <div class="kpi-sub">כולל הורים</div>
       </div>
       <div class="mgr-kpi-card teal">
         <span class="kpi-icon">🏠</span>
-        <div class="kpi-num">${t.totalFamilies}</div>
+        <div class="kpi-num">${fmtNum(t.totalFamilies)}</div>
         <div class="kpi-lbl">משפחות</div>
       </div>
       <div class="mgr-kpi-card orange">
         <span class="kpi-icon">🧒</span>
-        <div class="kpi-num">${t.totalChildren}</div>
+        <div class="kpi-num">${fmtNum(t.totalChildren)}</div>
         <div class="kpi-lbl">ילדים</div>
       </div>
       <div class="mgr-kpi-card purple">
         <span class="kpi-icon">📊</span>
         <div class="kpi-num">${t.fillPct}%</div>
         <div class="kpi-lbl">תפוסה כוללת</div>
-        <div class="kpi-sub">${t.totalPeople} / ${t.totalCapacity}</div>
+        <div class="kpi-sub">${fmtNum(t.totalPeople)} / ${fmtNum(t.totalCapacity)}</div>
       </div>
       <div class="mgr-kpi-card green">
         <span class="kpi-icon">✅</span>
-        <div class="kpi-num">${t.remaining}</div>
+        <div class="kpi-num">${fmtNum(t.remaining)}</div>
         <div class="kpi-lbl">מקומות פנויים</div>
       </div>
     `;
   }
 
+  // ── סינון דשבורד המנהלים: קיבוץ (יום/שבוע/חודש) + תקופה ──
+  const MGR_FILTER_KEY = 'mgrFilter';
+  const MGR_GROUPS  = ['day', 'week', 'month'];
+  const MGR_PRESETS = ['all', 'last30', 'last90', 'thisMonth', 'prevMonth', 'custom'];
+  const mgrFilter = { group: 'day', preset: 'all', from: '', to: '' };
+  try {
+    const saved = JSON.parse(localStorage.getItem(MGR_FILTER_KEY) || '{}');
+    if (MGR_GROUPS.includes(saved.group))   mgrFilter.group  = saved.group;
+    if (MGR_PRESETS.includes(saved.preset)) mgrFilter.preset = saved.preset;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(saved.from || '')) mgrFilter.from = saved.from;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(saved.to   || '')) mgrFilter.to   = saved.to;
+  } catch {}
+
+  function saveMgrFilter() {
+    try { localStorage.setItem(MGR_FILTER_KEY, JSON.stringify(mgrFilter)); } catch {}
+  }
+
+  function addDaysStr(dateStr, n) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+  }
+
+  // טווח תאריכים (כולל) לפי התקופה שנבחרה; מחרוזת ריקה = ללא הגבלה
+  function mgrRange() {
+    const today = todayIsraelStr();
+    const [y, m] = today.split('-').map(Number);
+    const pad = n => String(n).padStart(2, '0');
+    const monthEnd = (yy, mm) => `${yy}-${pad(mm)}-${pad(new Date(Date.UTC(yy, mm, 0)).getUTCDate())}`;
+    switch (mgrFilter.preset) {
+      case 'last30':    return { from: addDaysStr(today, -29), to: today };
+      case 'last90':    return { from: addDaysStr(today, -89), to: today };
+      case 'thisMonth': return { from: `${y}-${pad(m)}-01`, to: monthEnd(y, m) };
+      case 'prevMonth': {
+        const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+        return { from: `${py}-${pad(pm)}-01`, to: monthEnd(py, pm) };
+      }
+      case 'custom': {
+        let { from, to } = mgrFilter;
+        if (from && to && from > to) [from, to] = [to, from];
+        return { from, to };
+      }
+      default: return { from: '', to: '' };
+    }
+  }
+
+  function mgrFilterText() {
+    const { from, to } = mgrRange();
+    const groupTxt = { day: 'לפי ימים', week: 'לפי שבועות', month: 'לפי חודשים' }[mgrFilter.group];
+    let rangeTxt = 'כל התקופה';
+    if (from && to)  rangeTxt = `${hebrewDate(from)} – ${hebrewDate(to)}`;
+    else if (from)   rangeTxt = `מ-${hebrewDate(from)}`;
+    else if (to)     rangeTxt = `עד ${hebrewDate(to)}`;
+    return `${rangeTxt} · ${groupTxt}`;
+  }
+
+  function syncMgrFilterUi() {
+    document.querySelectorAll('#mgrFilterBar [data-group]').forEach(b =>
+      b.classList.toggle('active', b.dataset.group === mgrFilter.group));
+    document.getElementById('fltPreset').value = mgrFilter.preset;
+    document.getElementById('fltCustom').style.display = mgrFilter.preset === 'custom' ? 'inline-flex' : 'none';
+    document.getElementById('fltFrom').value = mgrFilter.from;
+    document.getElementById('fltTo').value   = mgrFilter.to;
+    const txt = mgrFilterText();
+    document.getElementById('fltSummary').textContent = txt;
+    document.getElementById('mgrFilterPrint').textContent = 'סינון: ' + txt;
+  }
+
+  function setMgrGroup(g) {
+    mgrFilter.group = g;
+    saveMgrFilter();
+    renderManager();
+  }
+
+  function setMgrPreset(p) {
+    mgrFilter.preset = p;
+    saveMgrFilter();
+    renderManager();
+  }
+
+  function setMgrCustomRange() {
+    mgrFilter.from = document.getElementById('fltFrom').value;
+    mgrFilter.to   = document.getElementById('fltTo').value;
+    saveMgrFilter();
+    renderManager();
+  }
+
+  function resetMgrFilter() {
+    Object.assign(mgrFilter, { group: 'day', preset: 'all', from: '', to: '' });
+    saveMgrFilter();
+    renderManager();
+  }
+
+  // אנשים וקיבולת ליום — מסכם גם סבבים ישנים ששמורים תחת מזהים אחרים
+  function dayStat(date) {
+    const dayData = allData[date] || {};
+    const expectedSlots = expectedSlotsForDate(date);
+    const allSlotKeys = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
+    let people = 0;
+    allSlotKeys.forEach(s => { people += countPeople(dayData[s] || []); });
+    const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * capacityDefault();
+    return { people, cap };
+  }
+
+  // מקבץ תאריכים ממוינים לפי יום / שבוע (א׳–ש׳) / חודש; מחזיר { key, label, dates, people, cap }
+  function groupDates(dates, mode) {
+    const shortDate = d => new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+    const map = new Map();
+    dates.forEach(date => {
+      let key, label;
+      if (mode === 'week') {
+        const start = addDaysStr(date, -new Date(date + 'T12:00:00').getDay());
+        key = start;
+        label = `${shortDate(start)}–${shortDate(addDaysStr(start, 6))}`;
+      } else if (mode === 'month') {
+        key = date.slice(0, 7);
+        label = new Date(date + 'T12:00:00').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+      } else {
+        key = date;
+        label = shortDate(date);
+      }
+      if (!map.has(key)) map.set(key, { key, label, dates: [], people: 0, cap: 0 });
+      const g = map.get(key);
+      const s = dayStat(date);
+      g.dates.push(date);
+      g.people += s.people;
+      g.cap    += s.cap;
+    });
+    return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+  }
+
   function renderManager() {
     // שלב את תאריכי האירוע (מ-api/dates) עם תאריכים שיש בהם רישומים
     const regDates = Object.keys(allData);
-    const combined = [...new Set([...allEventDates, ...regDates])].sort();
-    const allDates = combined;
+    const allDates = [...new Set([...allEventDates, ...regDates])].sort();
+
+    syncMgrFilterUi();
+    const { from, to } = mgrRange();
+    const inRange = d => (!from || d >= from) && (!to || d <= to);
+    const dates = allDates.filter(inRange);
+    const filteredRegDates = regDates.filter(inRange);
 
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayStr = todayIsraelStr();
-    const SLOT_ORDER = ['morning1','morning2','evening1','evening2'];
 
     // ── hero date ──
     document.getElementById('mgrDate').textContent =
       'נכון ל-' + today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
     // ── KPI cards (colored, outside hero) ──
-    document.getElementById('mgrKpis').innerHTML = kpiCardsHtml(computeTotals(regDates));
+    document.getElementById('mgrKpis').innerHTML = kpiCardsHtml(computeTotals(filteredRegDates));
 
-    // ── Day summary table — split past / future ──
+    // יום נחשב עבר אם תם לפני עכשיו (20:00)
+    const isDayPast = d => new Date() >= new Date(d + 'T20:00:00');
+
+    // ── Day summary table ──
     function buildDayRow(date) {
-      const dayData = allData[date] || {};
-      const daySlots = expectedSlotsForDate(date);
-      // sum ALL slots present — handles legacy data stored under different IDs
-      const allSlotKeys = [...new Set([...daySlots, ...Object.keys(dayData)])];
-      let dayPeople = 0;
-      allSlotKeys.forEach(s => { dayPeople += countPeople(dayData[s] || []); });
-      const dayCap = Math.max(daySlots.length, Object.keys(dayData).length) * capacityDefault();
-      const pct = Math.round((dayPeople/dayCap)*100);
+      const { people: dayPeople, cap: dayCap } = dayStat(date);
+      const pct = dayCap ? Math.round((dayPeople/dayCap)*100) : 0;
       const cls = capClass(pct);
-      const dayEndTime = new Date(date + 'T20:00:00');
-      const isPast  = new Date() >= dayEndTime;
+      const isPast  = isDayPast(date);
       const isToday = date === todayStr && !isPast;
 
       return `
         <tr class="${isToday ? 'today-row' : isPast ? 'past-row' : ''}">
           <td>${hebrewDay(date)}${isToday ? ' <span style="font-size:0.68rem;background:#1565c0;color:white;border-radius:10px;padding:1px 6px">היום</span>' : ''}</td>
           <td>${formatDate(date)}</td>
-          <td><strong>${dayPeople}</strong></td>
-          <td>${dayCap}</td>
+          <td><strong>${fmtNum(dayPeople)}</strong></td>
+          <td>${fmtNum(dayCap)}</td>
           <td>
             <div class="mgr-bar-wrap">
-              <div class="mgr-bar-bg"><div class="mgr-bar-fill ${cls}" style="width:${pct}%"></div></div>
+              <div class="mgr-bar-bg"><div class="mgr-bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
               <span class="mgr-bar-pct">${pct}%</span>
             </div>
           </td>
@@ -1621,39 +1801,56 @@
         </tr>`;
     }
 
-    // יום נחשב עבר אם תם לפני עכשיו (20:00)
-    const isDayPast = d => new Date() >= new Date(d + 'T20:00:00');
-
-    const pastDates   = allDates.filter(d => isDayPast(d));
-    const futureDates = allDates.filter(d => !isDayPast(d));
-
-    const pastRows   = pastDates.map(buildDayRow).join('');
-    const futureRows = futureDates.map(buildDayRow).join('');
-
-    const thead = `<thead><tr><th>יום</th><th>תאריך</th><th>נרשמו</th><th>קיבולת</th><th>מילוי</th><th>סטטוס</th></tr></thead>`;
+    function buildGroupRow(g) {
+      const pct = g.cap ? Math.round((g.people/g.cap)*100) : 0;
+      const cls = capClass(pct);
+      const isPast = g.dates.every(isDayPast);
+      return `
+        <tr class="${isPast ? 'past-row' : ''}">
+          <td>${escapeHtml(g.label)}</td>
+          <td>${fmtNum(g.dates.length)}</td>
+          <td><strong>${fmtNum(g.people)}</strong></td>
+          <td>${fmtNum(g.cap)}</td>
+          <td>
+            <div class="mgr-bar-wrap">
+              <div class="mgr-bar-bg"><div class="mgr-bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+              <span class="mgr-bar-pct">${pct}%</span>
+            </div>
+          </td>
+          <td><span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span></td>
+        </tr>`;
+    }
 
     let tableHtml = '';
 
-    // ── תאריכים שחלפו ──
-    if (pastDates.length) {
-      tableHtml += `<table class="mgr-day-table">${thead}<tbody>${pastRows}</tbody></table>`;
+    if (mgrFilter.group === 'day') {
+      const pastDates   = dates.filter(isDayPast);
+      const futureDates = dates.filter(d => !isDayPast(d));
+      const thead = `<thead><tr><th>יום</th><th>תאריך</th><th>נרשמו</th><th>קיבולת</th><th>מילוי</th><th>סטטוס</th></tr></thead>`;
+
+      // ── תאריכים שחלפו ──
+      if (pastDates.length) {
+        tableHtml += `<table class="mgr-day-table">${thead}<tbody>${pastDates.map(buildDayRow).join('')}</tbody></table>`;
+      }
+      // ── מפריד ויזואלי ──
+      if (pastDates.length && futureDates.length) {
+        tableHtml += `<div class="mgr-period-divider"><span>📅 תאריכים קרובים</span></div>`;
+      }
+      // ── תאריכים עתידיים ──
+      if (futureDates.length) {
+        tableHtml += `<table class="mgr-day-table">${thead}<tbody>${futureDates.map(buildDayRow).join('')}</tbody></table>`;
+      }
+    } else if (dates.length) {
+      const periodLbl = mgrFilter.group === 'week' ? 'שבוע' : 'חודש';
+      const thead = `<thead><tr><th>${periodLbl}</th><th>ימים</th><th>נרשמו</th><th>קיבולת</th><th>מילוי</th><th>סטטוס</th></tr></thead>`;
+      tableHtml = `<table class="mgr-day-table">${thead}<tbody>${groupDates(dates, mgrFilter.group).map(buildGroupRow).join('')}</tbody></table>`;
     }
 
-    // ── מפריד ויזואלי ──
-    if (pastDates.length && futureDates.length) {
-      tableHtml += `<div class="mgr-period-divider"><span>📅 תאריכים קרובים</span></div>`;
-    }
-
-    // ── תאריכים עתידיים ──
-    if (futureDates.length) {
-      tableHtml += `<table class="mgr-day-table">${thead}<tbody>${futureRows}</tbody></table>`;
-    }
-
-    if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים</div>';
+    if (!tableHtml) tableHtml = '<div style="color:#aaa;text-align:center;padding:20px">אין נתונים בתקופה שנבחרה</div>';
 
     document.getElementById('mgrDayContainer').innerHTML = tableHtml;
 
-    renderChart(pastDates);
+    renderChart(dates.filter(isDayPast));
   }
 
   function togglePastDaySummary() {
@@ -1931,20 +2128,11 @@
 
     await ensureChartJs();
 
-    const labels = pastDates.map(d => {
-      const dt = new Date(d + 'T12:00:00');
-      return dt.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
-    });
-
-    const data = pastDates.map(date => {
-      const dayData = allData[date] || {};
-      const expectedSlots = expectedSlotsForDate(date);
-      const allSlotKeys = [...new Set([...expectedSlots, ...Object.keys(dayData)])];
-      let people = 0;
-      allSlotKeys.forEach(s => { people += countPeople(dayData[s] || []); });
-      const cap = Math.max(expectedSlots.length, Object.keys(dayData).length) * capacityDefault();
-      return cap ? Math.round((people / cap) * 100) : 0;
-    });
+    // קיבוץ לפי הבחירה בסרגל הסינון; התפוסה של קבוצה = סך אנשים / סך קיבולת (לא ממוצע אחוזים)
+    const groups = groupDates(pastDates, mgrFilter.group);
+    const labels = groups.map(g => g.label);
+    const data = groups.map(g => g.cap ? Math.round((g.people / g.cap) * 100) : 0);
+    const isDaily = mgrFilter.group === 'day';
 
     section.style.display = 'block';
     const ctx = document.getElementById('occupancyChart').getContext('2d');
@@ -1959,7 +2147,7 @@
           borderColor: '#1565c0',
           backgroundColor: 'rgba(21,101,192,0.08)',
           pointBackgroundColor: data.map(v => v >= 85 ? '#2e7d32' : v >= 50 ? '#fb8c00' : '#c62828'),
-          pointRadius: 5,
+          pointRadius: isDaily ? 5 : 6,
           tension: 0.3,
           fill: true
         }]
@@ -1967,11 +2155,23 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        // מרווח למעלה כדי שנקודות ב-100% לא ייחתכו בקצה הקנבס
+        layout: { padding: { top: 14, right: 10 } },
         scales: {
           y: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
           x: { ticks: { font: { size: 11 } } }
         },
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => {
+                const g = groups[c.dataIndex];
+                return `${c.parsed.y}% (${fmtNum(g.people)} מתוך ${fmtNum(g.cap)})`;
+              }
+            }
+          }
+        },
         animation: {
           onComplete() {
             const canvas = document.getElementById('occupancyChart');
