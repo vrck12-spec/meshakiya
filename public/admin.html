@@ -76,6 +76,20 @@
     .export-btn.reserve-export { background: #fdf6e8; color: #6d5429; }
     .export-btn.reserve-export:hover { background: #f7ecd0; }
 
+    #dayPdfDate {
+      background: white; color: #1565c0; border: none; border-radius: 8px;
+      padding: 7px 10px; font-size: 0.85rem; font-family: inherit; cursor: pointer;
+    }
+    .rpt-check { width: 40px; }
+    .rpt-check-box { display: inline-block; width: 16px; height: 16px; border: 1.5px solid #999; border-radius: 3px; }
+
+    /* "PDF יומי" — גוונים ירוקים-בהירים ונעימים, נפרד מהצבעים הענבריים של "PDF מילואים" */
+    .dayrpt .rpt-header { background: #eaf8ef; border-color: #b9e4c9; }
+    .dayrpt .rpt-title, .dayrpt .rpt-sub, .dayrpt .rpt-slot-title { color: #1f6b45; }
+    .dayrpt .rpt-meta { color: #4d8a68; }
+    .dayrpt .rpt-slot-title { border-bottom-color: #b9e4c9; }
+    .dayrpt .rpt-table th { background: #eaf8ef; color: #1f6b45; border-bottom-color: #b9e4c9; }
+
     /* ===== Login ===== */
     #loginScreen {
       display: flex;
@@ -843,6 +857,8 @@
     <button class="export-btn" id="btnCsv" onclick="exportCSV()">📥 CSV</button>
     <button class="export-btn reserve-export" id="btnCsvReserve" onclick="exportReserveCSV()" title="קובץ Excel של נרשמי המילואים לשבוע הנוכחי">🎖️ ייצוא מילואים לאקסל</button>
     <button class="export-btn reserve-export" id="btnPdfReserve" onclick="exportReservePDF()" title="רשימה מעוצבת להדפסה/שמירה כ-PDF">🖨️ PDF מילואים</button>
+    <input type="date" id="dayPdfDate" title="תאריך לרשימת נרשמים יומית" />
+    <button class="export-btn" id="btnPdfDay" onclick="exportDayPDF()" title="רשימת כל הנרשמים ליום זה, עם עמודת סימון הגעה — להדפסה עבור מי שמתפעל את המשחקייה">🖨️ PDF יומי</button>
     <button class="export-btn" id="btnPdf" onclick="exportPDF()" style="display:none;background:#e8f5e9;color:#2e7d32">🖨️ PDF</button>
     <button class="topbar-btn" id="btnLogout" onclick="logout()" title="יציאה מהחשבון במכשיר זה">🚪 יציאה</button>
   </div>
@@ -1149,6 +1165,8 @@
     document.getElementById('userName').textContent = name ? ' · שלום, ' + name : '';
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('topbarActions').style.display = 'flex';
+    const dayPdfDate = document.getElementById('dayPdfDate');
+    if (!dayPdfDate.value) dayPdfDate.value = new Date().toISOString().split('T')[0];
     switchView(currentView);
     loadData();
   }
@@ -1788,6 +1806,59 @@
         <div class="rpt-meta">${totalFamilies} משפחות • ${totalPeople} אנשים · הופק ב-${new Date().toLocaleDateString('he-IL')}</div>
       </div>
       ${daysHtml}
+    `;
+
+    document.body.classList.add('printing-reserve');
+    const cleanup = () => document.body.classList.remove('printing-reserve');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+  }
+
+  // ── PDF יומי — רשימת ביקורת לכל הנרשמים ליום נבחר, עבור מי שמתפעל את המשחקייה בפועל ──
+  function exportDayPDF() {
+    const date = document.getElementById('dayPdfDate').value || new Date().toISOString().split('T')[0];
+    const slots = expectedSlotsForDate(date);
+    if (!slots.length) { alert('אין סבבים מוגדרים לתאריך זה — המשחקייה סגורה'); return; }
+
+    const dayData = allData[date] || {};
+    let totalPeople = 0, totalFamilies = 0;
+
+    const slotsHtml = slots.map(slotId => {
+      const regs = dayData[slotId] || [];
+      const count = countPeople(regs);
+      totalPeople += count; totalFamilies += regs.length;
+      const isReserve = isReserveSlot(date, slotId);
+      const cols = isReserve ? 7 : 6;
+      return `
+        <div class="rpt-slot">
+          <div class="rpt-slot-title">${slotLabel(date, slotId)} — ${count}/${capacityDefault()}</div>
+          <table class="rpt-table">
+            <thead><tr><th>#</th><th>שם הורה</th><th>טלפון</th><th>ילדים</th><th>סה"כ</th>${isReserve ? '<th>אלרגיות</th>' : ''}<th>✓ הגיע</th></tr></thead>
+            <tbody>
+              ${regs.length ? regs.map((r, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${r.parentName}</td>
+                  <td dir="ltr">${r.phone}</td>
+                  <td>${(r.children || []).map(c => `${c.name}${c.age != null ? ' (' + c.age + ')' : ''}`).join(', ')}</td>
+                  <td>${1 + (r.children || []).length}</td>
+                  ${isReserve ? `<td>${r.allergies || '—'}</td>` : ''}
+                  <td class="rpt-check"><span class="rpt-check-box"></span></td>
+                </tr>`).join('') : `<tr><td colspan="${cols}" class="empty-slot">אין רישומים</td></tr>`}
+            </tbody>
+          </table>
+        </div>`;
+    }).join('');
+
+    document.getElementById('reservePrintScreen').innerHTML = `
+      <div class="dayrpt">
+        <div class="rpt-header">
+          <div class="rpt-title">📋 רשימת נרשמים יומית</div>
+          <div class="rpt-sub">משחקיה עירונית 8 — ${hebrewDay(date)}, ${hebrewDate(date)}</div>
+          <div class="rpt-meta">${totalFamilies} משפחות • ${totalPeople} אנשים · הופק ב-${new Date().toLocaleString('he-IL')}</div>
+        </div>
+        <div class="rpt-day">${slotsHtml}</div>
+      </div>
     `;
 
     document.body.classList.add('printing-reserve');
