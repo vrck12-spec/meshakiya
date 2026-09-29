@@ -434,12 +434,22 @@ function isSlotPast(dateStr, slot) {
   return end !== null && end <= today.minutes;
 }
 
+// בורח מ-HTML כדי שערכים חופשיים (שם הורה, שמות ילדים) לא ירוצו כקוד כשמייל האישור נפתח בלקוח דואר שמרנדר HTML
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ===== שליחת אישור במייל =====
 async function sendConfirmationEmail(email, data) {
   if (!resend || !email) return;
 
   const childrenList = data.children.map(c =>
-    `<li>${c.name}${c.age != null ? ` (גיל ${c.age})` : ''}</li>`
+    `<li>${escapeHtml(c.name)}${c.age != null ? ` (גיל ${escapeHtml(c.age)})` : ''}</li>`
   ).join('');
 
   const html = `
@@ -451,7 +461,7 @@ async function sendConfirmationEmail(email, data) {
       </div>
 
       <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-        <p style="font-size: 1.1rem; color: #333;">שלום <strong>${data.parentName}</strong>,</p>
+        <p style="font-size: 1.1rem; color: #333;">שלום <strong>${escapeHtml(data.parentName)}</strong>,</p>
         <p style="color: #555;">רישומך למשחקיה העירונית התקבל בהצלחה! 🎉</p>
       </div>
 
