@@ -490,6 +490,7 @@
     .status-badge.medium { background: #fff3e0; color: #e65100; }
     .status-badge.high   { background: #e8f5e9; color: #2e7d32; }
     .status-badge.full   { background: #2e7d32; color: white; }
+    .status-badge.not-started { background: #eceff1; color: #607d8b; }
 
     /* Occupancy gauge */
     .mgr-gauge-wrap { text-align: center; padding: 10px 0 4px; }
@@ -685,6 +686,9 @@
     }
     .status-badge.full {
       background: #2e7d32 !important; color: white !important;
+    }
+    .status-badge.not-started {
+      background: #eceff1 !important; color: #607d8b !important;
     }
 
     /* bars */
@@ -1214,6 +1218,13 @@
     if (pct < 85)   return 'medium';
     if (pct < 100)  return 'high';
     return 'full';
+  }
+
+  // תווית סטטוס בטבלת הסיכום: תקופה שטרם החלה — "טרם החל" באפור; אחרת לפי אחוז התפוסה
+  function statusBadge(pct, notStarted) {
+    return notStarted
+      ? '<span class="status-badge not-started">טרם החל</span>'
+      : `<span class="status-badge ${capClass(pct)}">${capLabel(pct)}</span>`;
   }
 
   function capLabel(pct) {
@@ -1762,7 +1773,9 @@
         key = date;
         label = shortDate(date);
       }
-      if (!map.has(key)) map.set(key, { key, label, dates: [], people: 0, cap: 0 });
+      // תחילת התקופה עצמה (ראשון של השבוע / 1 בחודש) — לקביעת "טרם החל"
+      const start = mode === 'week' ? key : mode === 'month' ? key + '-01' : date;
+      if (!map.has(key)) map.set(key, { key, label, start, dates: [], people: 0, cap: 0 });
       const g = map.get(key);
       const s = dayStat(date);
       g.dates.push(date);
@@ -1817,7 +1830,7 @@
               <span class="mgr-bar-pct">${pct}%</span>
             </div>
           </td>
-          <td><span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span></td>
+          <td>${statusBadge(pct, date > todayStr)}</td>
         </tr>`;
     }
 
@@ -1837,7 +1850,7 @@
               <span class="mgr-bar-pct">${pct}%</span>
             </div>
           </td>
-          <td><span class="status-badge ${cls}">${capLabel(pct)}${isPast ? ' ✓' : ''}</span></td>
+          <td>${statusBadge(pct, g.start > todayStr)}</td>
         </tr>`;
     }
 
