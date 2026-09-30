@@ -972,7 +972,7 @@
 
   <!-- Occupancy chart -->
   <div class="mgr-section" id="chartSection" style="display:none">
-    <h3>📈 תפוסה לפי יום</h3>
+    <h3>📈 תפוסה על ציר הזמן</h3>
     <div style="position:relative;height:260px">
       <canvas id="occupancyChart"></canvas>
       <img id="occupancyChartImg" style="display:none;width:100%;height:260px;object-fit:contain" />
@@ -1097,6 +1097,11 @@
   function sanitizeCsvCell(v) {
     const s = String(v ?? '');
     return /^[=+\-@]/.test(s) ? `'${s}` : s;
+  }
+
+  // עוטף טווח מספרים/תאריכים בבידוד LTR — אחרת בהקשר RTL "5.4–11.4" מוצג הפוך כ-"11.4–5.4"
+  function ltr(s) {
+    return '⁦' + s + '⁩';
   }
 
   // מספר עם פסיק מפריד אלפים (1,234) — ספרות לועזיות גם בתוך טקסט בעברית
@@ -1379,7 +1384,7 @@
     // וגם על סבבים שיש בהם רישומים אך אינם בלוח הנוכחי, כדי שלא ידלגו על רישומים קיימים
     const week = currentWeekRange();
     document.getElementById('statsWeekLabel').textContent =
-      `השבוע הנוכחי: ${hebrewDate(week.from)} – ${hebrewDate(week.to)}`;
+      `השבוע הנוכחי: ${ltr(`${hebrewDate(week.from)} – ${hebrewDate(week.to)}`)}`;
     allDates.filter(d => d >= week.from && d <= week.to).forEach(date => {
       const slotIds = [...new Set([...expectedSlotsForDate(date), ...Object.keys(allData[date] || {})])];
       slotIds.forEach(slotId => {
@@ -1686,7 +1691,7 @@
     const { from, to } = mgrRange();
     const groupTxt = { day: 'לפי ימים', week: 'לפי שבועות', month: 'לפי חודשים' }[mgrFilter.group];
     let rangeTxt = 'כל התקופה';
-    if (from && to)  rangeTxt = `${hebrewDate(from)} – ${hebrewDate(to)}`;
+    if (from && to)  rangeTxt = ltr(`${hebrewDate(from)} – ${hebrewDate(to)}`);
     else if (from)   rangeTxt = `מ-${hebrewDate(from)}`;
     else if (to)     rangeTxt = `עד ${hebrewDate(to)}`;
     return `${rangeTxt} · ${groupTxt}`;
@@ -1749,7 +1754,7 @@
       if (mode === 'week') {
         const start = addDaysStr(date, -new Date(date + 'T12:00:00').getDay());
         key = start;
-        label = `${shortDate(start)}–${shortDate(addDaysStr(start, 6))}`;
+        label = ltr(`${shortDate(start)}–${shortDate(addDaysStr(start, 6))}`);
       } else if (mode === 'month') {
         key = date.slice(0, 7);
         label = new Date(date + 'T12:00:00').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
@@ -1822,7 +1827,7 @@
       const isPast = g.dates.every(isDayPast);
       return `
         <tr class="${isPast ? 'past-row' : ''}">
-          <td>${escapeHtml(g.label)}</td>
+          <td style="white-space:nowrap">${escapeHtml(g.label)}</td>
           <td>${fmtNum(g.dates.length)}</td>
           <td><strong>${fmtNum(g.people)}</strong></td>
           <td>${fmtNum(g.cap)}</td>
