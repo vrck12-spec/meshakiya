@@ -633,10 +633,71 @@
       '<div style="color:#888;text-align:center;grid-column:1/-1">אין שעות פעילות מוגדרות כרגע</div>';
   }
 
+  // מנקה HTML של באנר לפי רשימה לבנה — מסיר <font>, style, ושכפול הדגשה מקונן (strong בתוך strong מוצג עבה יותר
+  // מהשאר, וזה מה שגרם לשורה בגופן שונה). נשארים רק strong, em, br, קישורים בטוחים ומחלקות notice-* של פרטי הקשר.
+  function cleanBannerHtml(html) {
+    const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'TEMPLATE']);
+    const BLOCK = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'LI']);
+    const okClass = c => /^(notice-[\w-]+|name|phone)$/.test(c);
+    const src = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html').body;
+    const out = document.createElement('div');
+
+    function build(node, dest, inStrong) {
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) { dest.appendChild(document.createTextNode(ch.nodeValue)); return; }
+        if (ch.nodeType !== 1) return;
+        let tag = ch.tagName;
+        if (tag === 'B') tag = 'STRONG';
+        if (tag === 'I') tag = 'EM';
+        if (DROP.has(tag)) return;
+        if (tag === 'BR') { dest.appendChild(document.createElement('br')); return; }
+        if (tag === 'STRONG') {
+          if (inStrong) { build(ch, dest, true); return; }
+          const el = document.createElement('strong');
+          build(ch, el, true);
+          if (el.textContent.trim()) dest.appendChild(el);
+          return;
+        }
+        if (tag === 'EM') {
+          const el = document.createElement('em');
+          build(ch, el, inStrong);
+          if (el.textContent.trim()) dest.appendChild(el);
+          return;
+        }
+        const classes = (ch.getAttribute('class') || '').split(/\s+/).filter(okClass);
+        if (tag === 'A') {
+          const href = ch.getAttribute('href') || '';
+          if (/^(tel:[\d+\-]+|https?:\/\/\S+)$/i.test(href)) {
+            const a = document.createElement('a');
+            a.setAttribute('href', href);
+            if (classes.length) a.className = classes.join(' ');
+            build(ch, a, inStrong);
+            dest.appendChild(a);
+            return;
+          }
+        }
+        if ((tag === 'DIV' || tag === 'SPAN') && classes.length) {
+          const el = document.createElement(tag.toLowerCase());
+          el.className = classes.join(' ');
+          const dir = ch.getAttribute('dir');
+          if (dir === 'ltr' || dir === 'rtl') el.setAttribute('dir', dir);
+          build(ch, el, inStrong);
+          dest.appendChild(el);
+          return;
+        }
+        // כל שאר התגיות (font, span בלי מחלקה, div/p וכו') — נפרשות, והטקסט נשאר; בלוק נפרד מקבל שורה חדשה
+        build(ch, dest, inStrong);
+        if (BLOCK.has(tag) && dest.lastChild && dest.lastChild.nodeName !== 'BR') dest.appendChild(document.createElement('br'));
+      });
+    }
+    build(src, out, false);
+    return out.innerHTML;
+  }
+
   function renderBanner(banner) {
     const el = document.getElementById('vacationNotice');
     if (banner && banner.enabled && banner.html) {
-      el.innerHTML = banner.html;
+      el.innerHTML = cleanBannerHtml(banner.html);
       el.style.display = '';
     } else {
       el.style.display = 'none';

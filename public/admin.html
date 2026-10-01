@@ -981,6 +981,7 @@
       <canvas id="occupancyChart"></canvas>
       <img id="occupancyChartImg" style="display:none;width:100%;height:260px;object-fit:contain" />
     </div>
+    <div id="chartPartialNote" style="display:none;text-align:center;font-size:0.78rem;color:#888;margin-top:6px">○ נקודה חלולה — היום, נתון חלקי שעדיין מתעדכן</div>
   </div>
 
   <!-- Print note -->
@@ -1053,7 +1054,7 @@
       <button type="button" class="sched-mini-btn" onmousedown="event.preventDefault()" onclick="insertBannerLineBreak()">↵ שורה חדשה</button>
       <div class="sched-emoji-picker" id="schedEmojiPicker"></div>
     </div>
-    <div id="schedBannerHtml" contenteditable="true" oninput="onScheduleFieldChange()" onkeydown="handleBannerKeydown(event)" data-placeholder="טקסט הבאנר. סמנו קטע ולחצו הדגשה, או הוסיפו אימוג׳י מהרשימה למעלה"></div>
+    <div id="schedBannerHtml" contenteditable="true" oninput="onScheduleFieldChange()" onkeydown="handleBannerKeydown(event)" onpaste="handleBannerPaste(event)" data-placeholder="טקסט הבאנר. סמנו קטע ולחצו הדגשה, או הוסיפו אימוג׳י מהרשימה למעלה"></div>
     <div class="sched-hint" style="margin-top:8px;margin-bottom:0">מה שרואים כאן זה בדיוק איך זה ייראה — בלי תגי קוד. התצוגה המקדימה למעלה מציגה גם את הרקע והצבעים האמיתיים.</div>
   </div>
 
@@ -1884,7 +1885,8 @@
 
     document.getElementById('mgrDayContainer').innerHTML = tableHtml;
 
-    renderChart(dates.filter(isDayPast));
+    // התרשים כולל מהיום ואחורה (היום הנוכחי כנתון חלקי); ימים עתידיים לא מוצגים
+    renderChart(dates.filter(d => d <= todayStr));
   }
 
   function togglePastDaySummary() {
@@ -2168,6 +2170,15 @@
     const data = groups.map(g => g.cap ? Math.round((g.people / g.cap) * 100) : 0);
     const isDaily = mgrFilter.group === 'day';
 
+    // היום הנוכחי נכלל גם לפני 20:00, אבל הוא נתון חלקי (הרישומים עדיין מתעדכנים) — נקודה חלולה
+    const todayStr = todayIsraelStr();
+    const todayOpen = new Date() < new Date(todayStr + 'T20:00:00');
+    const isPartial = g => todayOpen && g.dates.includes(todayStr);
+    const pointColors = data.map(v => v >= 85 ? '#2e7d32' : v >= 50 ? '#fb8c00' : '#c62828');
+    const hasPartial = groups.some(isPartial);
+    const note = document.getElementById('chartPartialNote');
+    if (note) note.style.display = hasPartial ? 'block' : 'none';
+
     section.style.display = 'block';
     const ctx = document.getElementById('occupancyChart').getContext('2d');
     if (occupancyChartInstance) occupancyChartInstance.destroy();
@@ -2180,7 +2191,9 @@
           data,
           borderColor: '#1565c0',
           backgroundColor: 'rgba(21,101,192,0.08)',
-          pointBackgroundColor: data.map(v => v >= 85 ? '#2e7d32' : v >= 50 ? '#fb8c00' : '#c62828'),
+          pointBackgroundColor: groups.map((g, i) => isPartial(g) ? 'white' : pointColors[i]),
+          pointBorderColor: groups.map((g, i) => isPartial(g) ? pointColors[i] : '#1565c0'),
+          pointBorderWidth: groups.map(g => isPartial(g) ? 3 : 1),
           // Chart.js חותך כברירת מחדל כל ציור בקצה אזור הגרף — נקודות ב-100% נחתכו בחציין
           clip: false,
           pointRadius: isDaily ? 5 : 6,
@@ -2203,7 +2216,7 @@
             callbacks: {
               label: c => {
                 const g = groups[c.dataIndex];
-                return `${c.parsed.y}% (${fmtNum(g.people)} מתוך ${fmtNum(g.cap)})`;
+                return `${c.parsed.y}% (${fmtNum(g.people)} מתוך ${fmtNum(g.cap)})${isPartial(g) ? ' — כולל היום (חלקי)' : ''}`;
               }
             }
           }
@@ -2310,7 +2323,7 @@
     renderExceptionsEditor();
     renderEmojiPicker();
     document.getElementById('schedBannerEnabled').checked = !!scheduleDraft.banner?.enabled;
-    document.getElementById('schedBannerHtml').innerHTML = scheduleDraft.banner?.html || '';
+    document.getElementById('schedBannerHtml').innerHTML = cleanBannerHtml(scheduleDraft.banner?.html || '');
     document.getElementById('schedCapacity').value = scheduleDraft.capacityDefault || 30;
     renderPreview();
   }
@@ -2500,10 +2513,88 @@
     `).join('') || '<div class="sched-empty">אין חריגים כרגע — כל הימים פועלים לפי התבנית השבועית הקבועה</div>';
   }
 
+  // מנקה HTML של באנר לפי רשימה לבנה — מסיר <font>, style, ושכפול הדגשה מקונן (strong בתוך strong מוצג עבה יותר
+  // מהשאר, וזה מה שגרם לשורה בגופן שונה). נשארים רק strong, em, br, קישורים בטוחים ומחלקות notice-* של פרטי הקשר.
+  function cleanBannerHtml(html) {
+    const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'TEMPLATE']);
+    const BLOCK = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'LI']);
+    const okClass = c => /^(notice-[\w-]+|name|phone)$/.test(c);
+    const src = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html').body;
+    const out = document.createElement('div');
+
+    function build(node, dest, inStrong) {
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) { dest.appendChild(document.createTextNode(ch.nodeValue)); return; }
+        if (ch.nodeType !== 1) return;
+        let tag = ch.tagName;
+        if (tag === 'B') tag = 'STRONG';
+        if (tag === 'I') tag = 'EM';
+        if (DROP.has(tag)) return;
+        if (tag === 'BR') { dest.appendChild(document.createElement('br')); return; }
+        if (tag === 'STRONG') {
+          if (inStrong) { build(ch, dest, true); return; }
+          const el = document.createElement('strong');
+          build(ch, el, true);
+          if (el.textContent.trim()) dest.appendChild(el);
+          return;
+        }
+        if (tag === 'EM') {
+          const el = document.createElement('em');
+          build(ch, el, inStrong);
+          if (el.textContent.trim()) dest.appendChild(el);
+          return;
+        }
+        const classes = (ch.getAttribute('class') || '').split(/\s+/).filter(okClass);
+        if (tag === 'A') {
+          const href = ch.getAttribute('href') || '';
+          if (/^(tel:[\d+\-]+|https?:\/\/\S+)$/i.test(href)) {
+            const a = document.createElement('a');
+            a.setAttribute('href', href);
+            if (classes.length) a.className = classes.join(' ');
+            build(ch, a, inStrong);
+            dest.appendChild(a);
+            return;
+          }
+        }
+        if ((tag === 'DIV' || tag === 'SPAN') && classes.length) {
+          const el = document.createElement(tag.toLowerCase());
+          el.className = classes.join(' ');
+          const dir = ch.getAttribute('dir');
+          if (dir === 'ltr' || dir === 'rtl') el.setAttribute('dir', dir);
+          build(ch, el, inStrong);
+          dest.appendChild(el);
+          return;
+        }
+        // כל שאר התגיות (font, span בלי מחלקה, div/p וכו') — נפרשות, והטקסט נשאר; בלוק נפרד מקבל שורה חדשה
+        build(ch, dest, inStrong);
+        if (BLOCK.has(tag) && dest.lastChild && dest.lastChild.nodeName !== 'BR') dest.appendChild(document.createElement('br'));
+      });
+    }
+    build(src, out, false);
+    return out.innerHTML;
+  }
+
+  // הדבקה בעורך הבאנר כטקסט רגיל בלבד — הדבקה מ-Word/וואטסאפ מביאה איתה גופנים, צבעים ותגיות שמשבשים את העיצוב
+  function handleBannerPaste(e) {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    const range = getBannerRange();
+    range.deleteContents();
+    const frag = document.createDocumentFragment();
+    text.split(/\r?\n/).forEach((line, i) => {
+      if (i) frag.appendChild(document.createElement('br'));
+      frag.appendChild(document.createTextNode(line));
+    });
+    const last = frag.lastChild;
+    range.insertNode(frag);
+    if (last) setBannerCaretAfter(last);
+    onScheduleFieldChange();
+  }
+
   function onScheduleFieldChange() {
     scheduleDraft.banner = scheduleDraft.banner || {};
     scheduleDraft.banner.enabled = document.getElementById('schedBannerEnabled').checked;
-    scheduleDraft.banner.html = document.getElementById('schedBannerHtml').innerHTML;
+    scheduleDraft.banner.html = cleanBannerHtml(document.getElementById('schedBannerHtml').innerHTML);
     scheduleDraft.capacityDefault = Number(document.getElementById('schedCapacity').value) || 30;
     renderPreview();
   }
@@ -2653,7 +2744,7 @@
 
     const b = scheduleDraft.banner;
     document.getElementById('schedPreviewBanner').innerHTML = (b && b.enabled && b.html)
-      ? `<div class="vacation-notice-preview">${b.html}</div>`
+      ? `<div class="vacation-notice-preview">${cleanBannerHtml(b.html)}</div>`
       : '<div class="sched-empty">(הבאנר כבוי — לא יוצג לתושבים)</div>';
 
     const cards = buildHourCardsPreview(scheduleDraft, range);
