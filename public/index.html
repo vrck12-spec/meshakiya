@@ -57,13 +57,14 @@
       margin-bottom: 20px;
       box-shadow: 0 3px 14px rgba(0,0,0,0.06);
       border-right: 5px solid #5cc6b8;
-      color: #35524e;
-      font-size: 0.92rem;
+      color: #1f8a7a;
+      font-size: 0.95rem;
       line-height: 1.6;
       text-align: center;
     }
 
-    .vacation-notice strong { color: #1f8a7a; font-size: 1rem; }
+    /* הדגשה משנה רק משקל — אותו גופן, גודל וצבע כמו שאר הטקסט בבאנר */
+    .vacation-notice strong, .vacation-notice b { font: inherit; font-weight: 700; color: inherit; }
 
     .notice-contacts {
       margin-top: 12px;
@@ -634,7 +635,9 @@
   }
 
   // מנקה HTML של באנר לפי רשימה לבנה — מסיר <font>, style, ושכפול הדגשה מקונן (strong בתוך strong מוצג עבה יותר
-  // מהשאר, וזה מה שגרם לשורה בגופן שונה). נשארים רק strong, em, br, קישורים בטוחים ומחלקות notice-* של פרטי הקשר.
+  // מהשאר, וזה מה שגרם לשורה בגופן שונה). נשארים רק strong, br, קישורים בטוחים ומחלקות notice-* של פרטי הקשר.
+  // הדגשה נקבעת לכל קטע טקסט לפי הצאצא-הקרוב: <strong>/<b>/font-weight>=600 = מודגש; font-weight normal/lighter/<600 = רגיל —
+  // כך הסרת הדגשה (גם כש-Chrome/Edge מייצרים לשם כך span עם style) נשמרת ולא חוזרת להיות מודגשת.
   function cleanBannerHtml(html) {
     const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'TEMPLATE']);
     const BLOCK = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'LI']);
@@ -642,28 +645,33 @@
     const src = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html').body;
     const out = document.createElement('div');
 
-    function build(node, dest, inStrong) {
+    function boldOf(el, inherited) {
+      const tag = el.tagName;
+      if (tag === 'STRONG' || tag === 'B') return true;
+      const fw = (el.style && el.style.fontWeight || '').toLowerCase();
+      if (!fw) return inherited;
+      if (fw === 'bold' || fw === 'bolder') return true;
+      if (fw === 'normal' || fw === 'lighter') return false;
+      const n = parseInt(fw, 10);
+      return Number.isNaN(n) ? inherited : n >= 600;
+    }
+
+    // כותב טקסט ליעד; קטעים מודגשים רצופים נאספים ל-<strong> אחד (בלי הדגשה מקוננת)
+    function emitText(dest, text, bold) {
+      if (!bold) { dest.appendChild(document.createTextNode(text)); return; }
+      let st = dest.lastChild;
+      if (!(st && st.nodeName === 'STRONG')) { st = document.createElement('strong'); dest.appendChild(st); }
+      st.appendChild(document.createTextNode(text));
+    }
+
+    function build(node, dest, bold) {
       node.childNodes.forEach(ch => {
-        if (ch.nodeType === 3) { dest.appendChild(document.createTextNode(ch.nodeValue)); return; }
+        if (ch.nodeType === 3) { if (ch.nodeValue) emitText(dest, ch.nodeValue, bold); return; }
         if (ch.nodeType !== 1) return;
-        let tag = ch.tagName;
-        if (tag === 'B') tag = 'STRONG';
-        if (tag === 'I') tag = 'EM';
+        const tag = ch.tagName;
         if (DROP.has(tag)) return;
         if (tag === 'BR') { dest.appendChild(document.createElement('br')); return; }
-        if (tag === 'STRONG') {
-          if (inStrong) { build(ch, dest, true); return; }
-          const el = document.createElement('strong');
-          build(ch, el, true);
-          if (el.textContent.trim()) dest.appendChild(el);
-          return;
-        }
-        if (tag === 'EM') {
-          const el = document.createElement('em');
-          build(ch, el, inStrong);
-          if (el.textContent.trim()) dest.appendChild(el);
-          return;
-        }
+        const childBold = boldOf(ch, bold);
         const classes = (ch.getAttribute('class') || '').split(/\s+/).filter(okClass);
         if (tag === 'A') {
           const href = ch.getAttribute('href') || '';
@@ -671,22 +679,23 @@
             const a = document.createElement('a');
             a.setAttribute('href', href);
             if (classes.length) a.className = classes.join(' ');
-            build(ch, a, inStrong);
+            build(ch, a, false);
             dest.appendChild(a);
             return;
           }
         }
         if ((tag === 'DIV' || tag === 'SPAN') && classes.length) {
+          // בלוק פרטי הקשר: העיצוב שלו נקבע במחלקות, לא בהדגשה שמורשת
           const el = document.createElement(tag.toLowerCase());
           el.className = classes.join(' ');
           const dir = ch.getAttribute('dir');
           if (dir === 'ltr' || dir === 'rtl') el.setAttribute('dir', dir);
-          build(ch, el, inStrong);
+          build(ch, el, false);
           dest.appendChild(el);
           return;
         }
-        // כל שאר התגיות (font, span בלי מחלקה, div/p וכו') — נפרשות, והטקסט נשאר; בלוק נפרד מקבל שורה חדשה
-        build(ch, dest, inStrong);
+        // כל שאר התגיות (font, span בלי מחלקה, strong/b, div/p וכו') — נפרשות, והטקסט נשאר; בלוק נפרד מקבל שורה חדשה
+        build(ch, dest, childBold);
         if (BLOCK.has(tag) && dest.lastChild && dest.lastChild.nodeName !== 'BR') dest.appendChild(document.createElement('br'));
       });
     }
