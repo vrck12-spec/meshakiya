@@ -1069,6 +1069,7 @@
   <div style="display:flex;gap:10px;margin-bottom:30px;flex-wrap:wrap">
     <button class="submit-btn" style="flex:1 1 200px" onclick="saveSchedule()">💾 שמור שינויים</button>
     <button class="back-btn" onclick="loadScheduleEditor()">↩️ בטל שינויים / רענן</button>
+    <button class="back-btn" id="btnRestoreDefault" onclick="restoreDefaultSchedule()" style="border-color:#c62828 !important;color:#c62828" title="מחליף את כל ההגדרות (שעות, חריגים, באנר, קיבולת) בלוח השעות המקורי">🛟 שחזר שעות ברירת מחדל</button>
   </div>
 </div>
 
@@ -2721,6 +2722,54 @@
       msg.className = 'msg show error';
       msg.textContent = 'שגיאה בשמירה: ' + (data.error || res.status);
       return false;
+    }
+
+    try { await attempt(false); }
+    catch (e) { if (e.message !== 'unauthorized') { msg.className = 'msg show error'; msg.textContent = 'שגיאת תקשורת, נסה שוב'; } }
+    finally { btn.disabled = false; }
+  }
+
+  // ── שחזור ללוח השעות המקורי (שעות, חריגים, באנר וקיבולת) — אישור כפול, והשרת מגבה את המצב הנוכחי ──
+  async function restoreDefaultSchedule() {
+    const msg = document.getElementById('schedMsg');
+    msg.className = 'msg'; msg.textContent = '';
+    if (!confirm(
+      'שחזור ללוח השעות המקורי יחליף את כל ההגדרות הנוכחיות:\n' +
+      '• תבנית שבועית (א׳, ג׳–ה׳ אחה"צ בשני סבבים; ב׳ מילואים)\n' +
+      '• חריג סבבי הבוקר מ-28.09\n' +
+      '• טקסט הבאנר ופרטי הקשר\n• קיבולת ברירת מחדל\n\n' +
+      'ההגדרות שקיימות כרגע יגובו בשרת לפני ההחלפה.\n\nלהמשיך?'
+    )) return;
+    if (!confirm('אישור אחרון: להחליף עכשיו את כל הגדרות השעות בלוח השעות המקורי?')) return;
+
+    const btn = document.getElementById('btnRestoreDefault');
+    btn.disabled = true;
+
+    async function attempt(force) {
+      const res = await authFetch('/api/admin/schedule/restore-default' + (force ? '?force=true' : ''), { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        await loadScheduleEditor();
+        scheduleData = JSON.parse(JSON.stringify(scheduleDraft));
+        msg.className = 'msg show success';
+        msg.textContent = '✅ שעות הפעילות שוחזרו ללוח המקורי';
+        return;
+      }
+
+      if (res.status === 409 && data.conflicts?.length) {
+        const list = data.conflicts.map(c => `• ${hebrewDate(c.date)} (${hebrewDay(c.date)}) — ${c.families} משפחות, ${c.people} אנשים`).join('\n');
+        if (confirm(
+          `יש נרשמים בסבבים שהשחזור מוחק:\n\n${list}\n\n` +
+          `הרישומים האלה יישארו במערכת אך יוצגו כרישום לסבב שכבר לא קיים בלוח השעות.\n\nלשחזר בכל זאת?`
+        )) return attempt(true);
+        msg.className = 'msg show warning';
+        msg.textContent = 'השחזור בוטל — יש נרשמים בסבבים שנמחקו';
+        return;
+      }
+
+      msg.className = 'msg show error';
+      msg.textContent = 'שגיאה בשחזור: ' + (data.error || res.status);
     }
 
     try { await attempt(false); }

@@ -791,6 +791,42 @@ app.put('/api/admin/schedule', requireManager, async (req, res) => {
   }
 });
 
+// שומר גיבוי של הגדרות השעות הנוכחיות לפני שחזור (שורה נפרדת בטבלת settings; ללא היסטוריה — רק הגרסה האחרונה שנדרסה)
+const SETTINGS_BACKUP_KEY = 'schedule_backup';
+const SETTINGS_BACKUP_FILE = path.join(__dirname, 'schedule-settings.backup.json');
+async function backupScheduleSettings(settings) {
+  if (db) {
+    await db.query(
+      'INSERT INTO settings (key, value, updated_at) VALUES ($1,$2,NOW()) ON CONFLICT (key) DO UPDATE SET value=$2, updated_at=NOW()',
+      [SETTINGS_BACKUP_KEY, settings]
+    );
+  } else {
+    fs.writeFileSync(SETTINGS_BACKUP_FILE, JSON.stringify(settings, null, 2), 'utf8');
+  }
+}
+
+// שחזור ללוח השעות המקורי (buildDefaultScheduleSettings — כולל באנר). עובר את אותן בדיקות תקינות
+// והתנגשות מול נרשמים כמו שמירה רגילה, ומגבה את המצב הנוכחי לפני הדריסה.
+app.post('/api/admin/schedule/restore-default', requireManager, async (req, res) => {
+  try {
+    const restored = buildDefaultScheduleSettings();
+
+    const errors = [...validateScheduleSettings(restored), ...validateMergedSlotOverlaps(restored)];
+    if (errors.length) return res.status(500).json({ error: 'הגדרות ברירת המחדל אינן תקינות', details: errors });
+
+    const conflicts = await findRemovedSlotConflicts(scheduleSettings, restored);
+    if (conflicts.length && !req.query.force)
+      return res.status(409).json({ error: 'יש נרשמים בסבבים שיימחקו', conflicts });
+
+    await backupScheduleSettings(scheduleSettings);
+    await saveScheduleSettings(restored, req.user.name);
+    res.json({ success: true, updatedAt: restored.updatedAt, updatedBy: restored.updatedBy });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // ===== הפעלה =====
 initDB().then(loadScheduleSettings).then(() => {
   app.listen(PORT, () => {
