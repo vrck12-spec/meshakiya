@@ -519,6 +519,13 @@
   function dateToStr(d) { return d.toISOString().split('T')[0]; }
   function formatShortDate(dateStr) { const [, m, d] = dateStr.split('-'); return `${d}.${m}`; }
 
+  // טווח תאריכים לכותרת: אותו חודש — 04-08.10; חודשים שונים — 29.09–03.10; יום בודד — 01.10
+  function formatDateRange(start, end) {
+    if (start === end) return formatShortDate(start);
+    if (start.slice(0, 7) === end.slice(0, 7)) return `${start.split('-')[2]}-${formatShortDate(end)}`;
+    return `${formatShortDate(start)}–${formatShortDate(end)}`;
+  }
+
   // בורח מ-HTML כדי שהתוכן החופשי שמנהל מזין במסך עריכת השעות (period, display, label)
   // לא ירוץ כקוד אצל תושבים שפותחים את הדף הציבורי הזה
   function escapeHtml(s) {
@@ -718,7 +725,7 @@
       const res = await fetch('/api/schedule');
       const schedule = await res.json();
       const range = schedule.registrationRange;
-      const rangeLabel = `${formatShortDate(range.start)}–${formatShortDate(range.end)}`;
+      const rangeLabel = formatDateRange(range.start, range.end);
 
       document.title = `רישום למשחקיה העירונית — ${rangeLabel}`;
       // טווח תאריכים בתוך עמוד RTL מוצג הפוך ("08.10–02.10") — עוטפים בבידוד LTR כדי שיוצג 02.10–08.10
