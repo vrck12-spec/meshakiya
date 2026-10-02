@@ -391,6 +391,16 @@ function getRegistrationEndDate(now) {
   return getWeekBounds(dateToStr(nextSunday)).thursday;
 }
 
+// תחילת טווח הרישום לתצוגה: התאריך הראשון מהיום ואילך שיש בו לפחות סבב שטרם חלף. כך בשישי/שבת (או אחרי הסבב האחרון
+// של היום) הטווח מתחיל ביום הפעילות הבא (למשל א׳), ולא ביום סגור — אותו סינון כמו ב-/api/dates
+function getRegistrationStartDate(now, endDateStr) {
+  for (let d = new Date(now.dateStr + 'T12:00:00'); dateToStr(d) <= endDateStr; d.setDate(d.getDate() + 1)) {
+    const dateStr = dateToStr(d);
+    if (computeSlotsForDate(dateStr).some(slot => !isSlotPast(dateStr, slot))) return dateStr;
+  }
+  return now.dateStr;
+}
+
 function countPeople(regs) {
   return regs.reduce((sum, r) => sum + 1 + (r.children || []).length, 0);
 }
@@ -532,12 +542,14 @@ app.get('/api/dates', async (req, res) => {
 });
 
 app.get('/api/schedule', (req, res) => {
+  const now = nowInIsrael();
+  const end = getRegistrationEndDate(now);
   res.json({
     banner: scheduleSettings.banner,
     weeklyTemplate: scheduleSettings.weeklyTemplate,
     exceptions: scheduleSettings.exceptions,
     capacityDefault: scheduleSettings.capacityDefault,
-    registrationRange: { start: nowInIsrael().dateStr, end: getRegistrationEndDate(nowInIsrael()) },
+    registrationRange: { start: getRegistrationStartDate(now, end), end },
   });
 });
 

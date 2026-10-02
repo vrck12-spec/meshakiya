@@ -721,8 +721,10 @@
       const rangeLabel = `${formatShortDate(range.start)}–${formatShortDate(range.end)}`;
 
       document.title = `רישום למשחקיה העירונית — ${rangeLabel}`;
-      document.getElementById('headerSubtitle').textContent = rangeLabel;
-      document.getElementById('hoursRangeSuffix').textContent = ` — ${rangeLabel}`;
+      // טווח תאריכים בתוך עמוד RTL מוצג הפוך ("08.10–02.10") — עוטפים בבידוד LTR כדי שיוצג 02.10–08.10
+      const rangeLabelLtr = '⁦' + rangeLabel + '⁩';
+      document.getElementById('headerSubtitle').textContent = rangeLabelLtr;
+      document.getElementById('hoursRangeSuffix').textContent = ` — ${rangeLabelLtr}`;
       document.getElementById('capacityText').textContent = schedule.capacityDefault || 30;
 
       renderBanner(schedule.banner);

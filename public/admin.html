@@ -2640,18 +2640,19 @@
     sel.addRange(range);
   }
 
-  // מסמנים טקסט ולוחצים "הדגשה" — עוטף אותו ב-<strong> אמיתי (לא טקסט של תגיות). בלי בחירה — מוסיף מילות דוגמה מודגשות בסמן.
+  // כפתור "הדגשה" מחליף מצב: טקסט מסומן שאינו מודגש — יודגש; טקסט מסומן שכבר מודגש — ההדגשה תוסר (כמו Ctrl+B).
+  // בלי בחירה — מוסיף מילות דוגמה מודגשות בסמן.
   function wrapBannerSelection(tag) {
     const range = getBannerRange();
-    const el = document.createElement(tag);
     if (range.collapsed) {
+      const el = document.createElement(tag);
       el.textContent = 'טקסט מודגש';
       range.insertNode(el);
+      setBannerCaretAfter(el);
     } else {
-      el.appendChild(range.extractContents());
-      range.insertNode(el);
+      document.getElementById('schedBannerHtml').focus();
+      document.execCommand('bold');
     }
-    setBannerCaretAfter(el);
     onScheduleFieldChange();
   }
 
